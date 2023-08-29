@@ -1,0 +1,79 @@
+* {
+  -webkit-font-smoothing: antialiased;
+}
+
+$body-font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+
+.header {
+  transition: margin-right 0.5s;
+  // margin-right: 424px;
+}
+
+.logo {
+  display: flex;
+  margin: 0;
+  padding: 0.5em; // 10px 0px 1em;
+  padding-left: 1em;
+  float: left;
+}
+
+.logo-title {
+  color: rgb(0, 0, 0);
+  display: flex;
+  margin: 0;
+  padding: 0.5em;
+  line-height: 40px;
+  float: right;
+  h2 {
+    margin: 0px;
+    font-size: 30px;
+    font-family: $body-font-family;
+    font-weight: 600;
+  }
+}
+
+.header-title {
+  padding-top: 1em;
+  font-family: $body-font-family;
+  font-size: 18px;
+  font-weight: bold;
+  text-transform: uppercase;
+  display: flex;
+  float: left;
+}
+
+.eco-navigation {
+  margin-left: 0;
+  list-style: none;
+  margin: 0;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: inline-flex;
+  -webkit-flex-flow: row wrap;
+}
+
+.eco-navigation a {
+  text-align: center;
+  font-family: $body-font-family;
+  text-decoration: none;
+  display: block;
+  padding: 1em;
+  font-size: 16px;
+  font-weight: 600 !important;
+  color: rgb(113, 113, 113);
+  margin-left: 10px;
+  width: auto;
+  min-width: 46px;
+  max-width: 190px;
+}
+
+.eco-navigation .current {
+  color: rgb(247, 96, 118);
+}
+
+.eco-navigation a:hover {
+  //background: darken(, 2%);
+  color: rgb(153, 8, 8);
+}

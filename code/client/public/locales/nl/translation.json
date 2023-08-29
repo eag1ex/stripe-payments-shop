@@ -1,0 +1,10 @@
+{
+  "title": "Stripe Checkout Voorbeeld",
+  "headline": "Jaarlijks Spring Academy Concert",
+  "subline": "Het beste uit ons programma voor jonge kunstenaars presenteren.",
+  "date": "24 mei 2020",
+  "sr-legal-text": "Aantal kaartjes (max 10)",
+  "button": {
+    "submit": "Koop voor {{total}}"
+  }
+}

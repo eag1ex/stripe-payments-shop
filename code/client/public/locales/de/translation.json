@@ -1,0 +1,10 @@
+{
+  "title": "Stripe Checkout Beispiel",
+  "headline": "Jährliches Konzert der Frühlingsakademie",
+  "subline": "Präsentieren Sie das Beste aus unserem Programm für junge Künstler.",
+  "sr-legal-text": "Maximal 10 Anzahl der Tickets",
+  "date": "24 Mai 2020",
+  "button": {
+    "submit": "Für {{total}} kaufen"
+  }
+}

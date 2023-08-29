@@ -1,0 +1,81 @@
+name: Run E2E, Redact, Run Smoke and Push
+
+on:
+  push:
+    branches: [ solution ]
+
+jobs:
+  run-e2e:
+    name: Run all test suites
+    uses: ./.github/workflows/validate-test.yml
+    with:
+      test_suite: '*'
+      source_code_branch: solution
+    secrets:
+      token: ${{ secrets.WORKFLOW_TOKEN }}
+      stripe-secret-key: ${{ secrets.STRIPE_SECRET_KEY }}
+      stripe-publishable-key: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          
+  redact-implementaion:
+    name: Run copybara to redact Stripe implementations
+    runs-on: ubuntu-latest
+    needs: run-e2e
+
+    steps:
+      - name: Get Token
+        run: |
+          TOKEN="$(npx obtain-github-app-installation-access-token ci ${{ secrets.WORKFLOW_TOKEN }})"
+          echo "::add-mask::$TOKEN"
+          echo "github-token=$TOKEN" >> $GITHUB_ENV
+      
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: solution        
+
+      - name: Redact and Push
+        uses: olivr/copybara-action@v1.2.3
+        with:
+          access_token: ${{ env.github-token }}
+          ssh_key: ${{ secrets.COPYBARA_KEY }}
+          custom_config: copy.bara.sky
+          copybara_options: --force --git-committer-email=${{ secrets.APP_EMAIL }} --git-committer-name=${{ secrets.APP_NAME }}
+          workflow: push
+
+  run-smoke:
+    name: Run smoke tests on now-redacted challenge code
+    needs: redact-implementaion
+    uses: ./.github/workflows/validate-test.yml
+    with:
+      test_suite: smoke.spec.ts
+      source_code_branch: redacted-code
+    secrets:
+      token: ${{ secrets.WORKFLOW_TOKEN }}
+      stripe-secret-key: ${{ secrets.STRIPE_SECRET_KEY }}
+      stripe-publishable-key: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+
+  push-to-main:
+    name: Push challenge code to main
+    runs-on: ubuntu-latest
+    needs: run-smoke
+
+    steps:
+      - name: Get Token
+        run: |
+          TOKEN="$(npx obtain-github-app-installation-access-token ci ${{ secrets.WORKFLOW_TOKEN }})"
+          echo "::add-mask::$TOKEN"
+          echo "github-token=$TOKEN" >> $GITHUB_ENV
+          
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: redacted-code 
+          
+      - name: Merge redacted-code -> main
+        uses: devmasx/merge-branch@master
+        with:
+          type: now
+          from_branch: redacted-code
+          target_branch: main
+          github_token: ${{ env.github-token }}
+          message: ${{ github.event.head_commit.message }}

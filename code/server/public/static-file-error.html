@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600&display=swap');
+    body { /* can also be whatever container */
+      height: 100%;
+      width: 100%;
+      display: grid;
+      align-items: center;
+      justify-content: center;
+    }
+    .warning-title {
+      color: rgb(0, 25, 39);
+      font-size: 24px;
+      font-family: 'Source Sans Pro', sans-serif;
+      font-weight: 600;
+      text-align: center;
+    }
+    .warning {
+      color: rgb(113, 113, 113);
+      font-size: 18px;
+      font-family: 'Source Sans Pro', sans-serif;
+      font-weight: normal;
+      text-align: center;
+      line-height: 35px;
+    }
+  </style>
+</head>
+<body>
+  <div style="width: 100%; height: 227px;"></div>
+  <p class="warning-title">No Static Files Were Found</p>
+  <p>
+    <div class="warning">When using React to complete this challenge, the app service renders this page.</div>
+    <div class="warning">If you are using a Vanilla stack for this challenge make sure you have the correct value in the STATIC_DIR variable.</div>
+  </p>
+</body>
+</html>

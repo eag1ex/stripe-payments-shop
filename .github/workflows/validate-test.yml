@@ -1,0 +1,124 @@
+name: Validate Tests (E2E or Smoke)
+
+on: 
+  workflow_call:
+    inputs:      
+      source_code_branch: 
+        type: string
+        required: true
+        description: The Branch on which the Test Cases should run -> solution for E2E and redacted-code for smoke
+      test_suite: 
+        type: string
+        required: true
+        description: Test Suite to run -> smoke for smoke tests and * for e2e
+    secrets:
+      token:
+        required: true
+      stripe-secret-key:
+        required: true
+      stripe-publishable-key:
+        required: true
+
+jobs:
+  run-tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        operating-system: ['ubuntu-latest']
+        php-versions: ['8.0.8']
+        phpunit-versions: ['latest']
+        include:
+          - operating-system: 'ubuntu-latest'
+            php-versions: '8.0.8'
+        node-version: [14.x]
+        ruby-version: [3.0.1]
+        java-version: [19]
+        python-version: ["3.9"]
+    env:
+      repo-name: ${{ github.event.repository.name }}      
+      DEBUG: pw:webserver
+
+    steps:
+      - name: Obtain a GitHub App Access Token
+        run: |
+          TOKEN="$(npx obtain-github-app-installation-access-token ci ${{ secrets.token }})"
+          echo "::add-mask::$TOKEN"
+          echo "github-token=$TOKEN" >> $GITHUB_ENV
+      
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{inputs.source_code_branch}}
+          token: ${{ env.github-token }}
+          path: source_code
+
+      - name: Set Challenge Identifier
+        id: challenge-id
+        uses: stripe-certification/actions/.github/actions/unique-names-generator@v3
+        with:
+          seed: env.repo-name
+      
+      - name: Create .env & set CI true
+        run: |
+          php -r "file_exists('.env') || copy('.env.example', '.env');"
+          sed -i.bak '/^STRIPE_SECRET_KEY=/s/=.*/=${{ secrets.stripe-secret-key }}\n/' .env
+          sed -i.bak '/^STRIPE_PUBLISHABLE_KEY=/s/=.*/=${{ secrets.stripe-publishable-key }}\n/' .env
+          sed -i.bak '/^CI=/s/=.*/=true\n/' .env
+          sed -i.bak '/^CHALLENGE_ID=/s/=.*/=${{ steps.challenge-id.outputs.name }}\n/' .env
+        working-directory: ${{ github.workspace }}/source_code/code/server
+
+      - name: Setup Node v${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Setup Ruby v${{ matrix.ruby-version }}
+        if: ${{ contains(github.repository, 'ruby') }}
+        uses: ruby/setup-ruby@477b21f02be01bcb8030d50f37cfec92bfa615b6
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+      
+      - name: Setup Java v${{ matrix.java-version }}
+        if: contains(github.repository, 'java') 
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: zulu
+          architecture: x64
+          cache: 'maven'
+
+      - name: Setup Python v${{ matrix.python-version }}
+        if: contains(github.repository, 'python') 
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Server Dependencies
+        run: pwd && sh ./install.sh
+        working-directory: ${{ github.workspace }}/source_code/code/server      
+
+      - name: Clean Install React Dependancies
+        if: ${{ contains(github.repository, 'react') }}
+        run: | 
+          rm -rf node_modules
+          rm -f package-lock.json
+          npm install     
+        working-directory: ${{ github.workspace }}/source_code/code/client
+    
+      - name: Install Playwright Dependencies
+        run: npm install
+        working-directory: ${{ github.workspace }}/source_code/test
+      
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: ${{ github.workspace }}/source_code/test
+      
+      - name: Start Client
+        if: ${{ (contains(github.repository, 'react')) }}
+        run: sh ./start.sh
+        working-directory: ${{ github.workspace }}/source_code/code/client    
+
+      - name: Run Playwright tests
+        run: npx playwright test ./specs/${{ inputs.test_suite }} --reporter=list
+        working-directory: ${{ github.workspace }}/source_code/test

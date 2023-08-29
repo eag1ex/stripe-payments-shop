@@ -1,0 +1,11 @@
+{
+  "title": "Checkout Stripe",
+  "headline": "Konsert Akademi Spring Tahunan",
+  "subline": "Mempamerkan yang terbaik dari program artis muda kami.",
+  "date": " 24 Mei, 2020",
+  "sr-legal-text": "Bilangan tiket (maks 10)",
+ 
+  "button": {
+    "submit": "Beli untuk {{total}}"
+  }
+}

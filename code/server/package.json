@@ -1,0 +1,29 @@
+{
+  "name": "stripe-music-shop-dev-build",
+  "version": "1.0.0",
+  "description": "Ipsum Street Music Shop",
+  "main": "client.js",
+  "scripts": {
+    "start": "nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "stripe-ecosystem",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "dotenv": "^8.0.0",
+    "express": "^4.17.1",
+    "stripe": "^8.174.0",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb": "^18.1.0",
+    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-react": "^7.20.0",
+    "eslint-plugin-react-hooks": "^2.5.0",
+    "nodemon": "^2.0.12"
+  }
+}
