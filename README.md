@@ -81,3 +81,4 @@ If any of your API keys are written directly into files, or drawn from anywhere 
  * _As always, you should **never** commit API secrets into source control. Make sure your Stripe account is (1) up to date with the latest API version, and (2) isn't operating an active business.  If necessary, you can easily [create new Stripe accounts](https://stripe.com/docs/multiple-accounts).  You don't need to activate the account, your integration only runs in test mode._
 
  
+- _Milestone 1 Started On Tue Aug 29 07:49:53 UTC 2023_
