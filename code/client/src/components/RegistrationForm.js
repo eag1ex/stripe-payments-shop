@@ -3,6 +3,9 @@ import { loadStripe } from "@stripe/stripe-js";
 import React, { useEffect, useRef, useState } from "react";
 import CardSetupForm from "./CardSetupForm";
 
+import { createCustomer } from '../Services/account'
+import { Link } from "react-router-dom";
+
 const RegistrationForm = (props) => {
   const { selected, details } = props;
   const [error, setError] = useState(null);
@@ -17,17 +20,43 @@ const RegistrationForm = (props) => {
   // TODO: Integrate Stripe
 
   const handleChange = async(value, field) => {
-    //TODO: Handle the checkout event
+    if (field === "learnerEmail") setLearnerEmail(value);
+    if (field === "learnerName") setLearnerName(value);
   }
-
+  
   const handleClickForPaymentElement = async () => {
-    // TODO: Setup and Load Payment Element
+    if (
+      !!learnerEmail && !!learnerName && !processing&&
+      existingCustomer?.customerEmail === learnerEmail && existingCustomer?.customerName === learnerName) {
+      setError(null)
+        return false
+    }
+
+    setError(null);
+    setProcessing(true)
+    createCustomer({ learnerEmail, learnerName }).then(n=>{
+      // if (n.exists) setExistingCustomer(n.exists || false)
+      setProcessing(false)
+      setCustomerId(n.customer)
+      setLearnerEmail(n.learnerEmail)
+      setLearnerName(n.learnerName)
+      // setClientSecret(n.publishableKey)
+      console.log('created customer', n)
+
+      setExistingCustomer({ customerId: n.customer, customerEmail: n.learnerEmail, customerName: n.learnerName })
+
+    }).catch(e=>{
+      console.log('error', e)
+      setError(e.message)
+    })
   };
 
+  console.log('selected', selected, props)
 
   let body = null;
   if (selected === -1) return body;
   if (clientSecret) {
+
     body = (
       <Elements stripe={stripePromise.current} options={{appearance, clientSecret}}>
       <CardSetupForm
@@ -92,18 +121,17 @@ const RegistrationForm = (props) => {
           >
             A customer with that email address already exists. If you'd
             like to update the card on file, please visit{" "}
-            <span id="account_link">
-              <b>
-                <a
-                  href={`localhost:3000/account-update/${existingCustomer.customerId}`}
-                >
-                  account update
-                </a>
-              </b>
-            </span>
+
+              <Link
+                state={{ customer: existingCustomer}}
+                id="account-link"
+                to={`../account-update/${existingCustomer?.customerId}`}
+              >
+                <b>account update</b>
+              </Link>
             {"\n"}
             <span id="error_message_customer_email">
-              {existingCustomer.customerEmail}
+              {existingCustomer?.customerEmail}
             </span>
             .
           </div>
@@ -122,3 +150,5 @@ const RegistrationForm = (props) => {
   return <div className="lesson-form">{body}</div>
 };
 export default RegistrationForm;
+
+

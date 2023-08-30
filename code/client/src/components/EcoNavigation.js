@@ -1,7 +1,8 @@
 import React from "react";
-import { Link } from "@reach/router";
+import { Link } from "react-router-dom";
 //Show Nav Menu
 const EcoNav = ({ links }) => {
+  console.log('links are', links)
   return (
     <nav>
       <div className="logo">
@@ -11,11 +12,11 @@ const EcoNav = ({ links }) => {
         {links.map((link) => (
           <li key={link.name.replace(" ", "")}>
             {link.selected ? (
-              <Link to={link.url} className="current">
+              <Link to={`../${link.url}`} className="current">
                 {link.name}
               </Link>
             ) : (
-              <Link to={link.url}>{link.name}</Link>
+              <Link to={`../${link.url}`}>{link.name}</Link>
             )}
           </li>
         ))}

@@ -5,12 +5,14 @@ const app = express();
 const { resolve } = require('path');
 // Replace if using a different env file or config
 require('dotenv').config({ path: './.env' });
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY, { apiVersion:'2022-11-15' });
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 
 const allitems = {};
 const fs = require('fs');
+
+const apiBase = `https://api.stripe.com/v1`
 
 app.use(express.static(process.env.STATIC_DIR));
 
@@ -33,21 +35,61 @@ app.use(cors({ origin: true }));
 //   Promise.resolve(fn(req, res, next)).catch(next);
 // };
 
-app.post("/webhook", async (req, res) => {
-  // TODO: Integrate Stripe
+
+
+app.post('/webhook', async (req, res) => {
+  let data, eventType;
+
+  // Check if webhook signing is configured.
+  if (process.env.STRIPE_WEBHOOK_SECRET) {
+    // Retrieve the event by verifying the signature using the raw body and secret.
+    let event;
+    let signature = req.headers['stripe-signature'];
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.rawBody,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.log(`⚠️  Webhook signature verification failed.`);
+      return res.sendStatus(400);
+    }
+    data = event.data;
+    eventType = event.type;
+  } else {
+    // Webhook signing is recommended, but if the secret is not configured in `config.js`,
+    // we can retrieve the event data directly from the request body.
+    data = req.body.data;
+    eventType = req.body.type;
+  }
+
+  if (eventType === 'payment_intent.succeeded') {
+    // Funds have been captured
+    // Fulfill any orders, e-mail receipts, etc
+    // To cancel the payment after capture you will need to issue a Refund (https://stripe.com/docs/api/refunds)
+    console.log('💰 Payment captured!');
+  } else if (eventType === 'payment_intent.payment_failed') {
+    console.log('❌ Payment failed.');
+  }
+  res.sendStatus(200);
 });
 
+
+
+
+
 // Routes
-app.get('/', (req, res) => {
-  try {
-    const path = resolve(`${process.env.STATIC_DIR}/index.html`);
-    if (!fs.existsSync(path)) throw Error();
-    res.sendFile(path);
-  } catch (error) {
-    const path = resolve('./public/static-file-error.html');
-    res.sendFile(path);
-  }
-});
+// app.get('/', (req, res) => {
+//   try {
+//     const path = resolve(`${process.env.STATIC_DIR}/index.html`);
+//     if (!fs.existsSync(path)) throw Error();
+//     res.sendFile(path);
+//   } catch (error) {
+//     const path = resolve('./public/static-file-error.html');
+//     res.sendFile(path);
+//   }
+// });
 
 // Fetch the Stripe publishable key
 //
@@ -58,20 +100,69 @@ app.get('/', (req, res) => {
 //   {
 //        key: <STRIPE_PUBLISHABLE_KEY>
 //   }
-app.get("/config", (req, res) => {
-  // TODO: Integrate Stripe
-});
+// app.get("/config", (req, res) => {
+//   // TODO: Integrate Stripe
+// });
 
+//ATTENTION this is confusing, why do we even have this here, react does not generate a page for this, all rendered from index.html
 // Milestone 1: Signing up
 // Shows the lesson sign up page.
-app.get('/lessons', (req, res) => {
+// app.get('/lessons', (req, res) => {
+//   try {
+//     console.log('running sessons')
+//     const path = resolve(`${process.env.STATIC_DIR}/lessons.html`);
+//     if (!fs.existsSync(path)) throw Error();
+//     console.log('running sessons2')
+//     res.sendFile(path);
+//   } catch (error) {
+//     const path = resolve('./public/static-file-error.html');
+//     res.sendFile(path);
+//   }
+// });
+
+app.post('/lessons', async (req, res) => {
   try {
-    const path = resolve(`${process.env.STATIC_DIR}/lessons.html`);
-    if (!fs.existsSync(path)) throw Error();
-    res.sendFile(path);
+    
+    console.log('lessons', req.body)
+    const { learnerEmail, learnerName } = req.body ||{}
+
+    if (!learnerEmail || !learnerName) return res.status(400).send({ error: { message: 'missing learnerEmail or learnerName'}})
+
+    const r = await stripe.customers.create({ email:learnerEmail, name:learnerName })
+  
+
+    const exists = await stripe.customers.search({ query: `name:"${learnerName}" AND email:"${learnerEmail}"` })
+   
+    if (exists.data?.length){
+      console.log('customer exists', exists.data[0].id)
+      
+      return res.send({
+        exists:true,
+        customer: exists.data[0].id,
+        learnerName: exists.data[0].name,
+        learnerEmail: exists.data[0].email,
+        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+      });
+    }
+
+    return res.send({
+      customer: r.id,
+      learnerName: r.name,
+      learnerEmail: r.email,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+    });
+    
+
   } catch (error) {
-    const path = resolve('./public/static-file-error.html');
-    res.sendFile(path);
+
+    console.log('lessons error', error)
+    
+    res.status(400).send({
+      error: {
+        message: error.message,
+      }
+    });
+
   }
 });
 

@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from "react";
 import Header from "../components/Header";
 import UpdateCustomer from "../components/UpdateCustomer";
+
 import "../css/lessons.scss";
 import { accountUpdate } from "../Services/account";
+import { useLocation } from 'react-router-dom';
 
 //Component responsable to update user's info.
 const AccountUpdate = ({ id }) => {
-  const [data, setData] = useState({});
 
+  const { pathname, hash, key, state } = useLocation();
+  const d = { ...state }
+  console.log('AccountUpdate/state12', state)
+
+  const [data, setData] = useState(d);
+  console.log('AccountUpdate sd', data)
   //Get info to load page, User payment information, config API route in package.json "proxy"
   useEffect(() => {
     const setup = async () => {
@@ -40,19 +47,19 @@ const AccountUpdate = ({ id }) => {
             <h5>We have the following card information on file for you: </h5>
             <p>
               Billing Email:&nbsp;&nbsp;
-              <span id="billing-email">{data.customer.email}</span>
+              <span id="billing-email">{data?.customer?.email}</span>
             </p>
             <p>
               Card Exp Month:&nbsp;&nbsp;
-              <span id="card-exp-month">{data.card.exp_month}</span>
+              <span id="card-exp-month">{data?.card?.exp_month}</span>
             </p>
             <p>
               Card Exp Year:&nbsp;&nbsp;
-              <span id="card-exp-year">{data.card.exp_year}</span>
+              <span id="card-exp-year">{data?.card?.exp_year}</span>
             </p>
             <p>
               Card last 4:&nbsp;&nbsp;
-              <span id="card-last4">{data.card.last4}</span>
+              <span id="card-last4">{data?.card?.last4}</span>
             </p>
           </div>
           <UpdateCustomer

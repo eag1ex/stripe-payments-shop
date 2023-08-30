@@ -9,8 +9,8 @@ const Header = ({ selected }) => {
     <div className="header">
       <EcoNav
         links={[
-          { name: "Home", url: "/", selected: home },
-          { name: "Lessons Courses", url: "/lessons", selected: lessons },
+          { name: "Home", url: "", selected: home },
+          { name: "Lessons Courses", url: "lessons", selected: lessons },
         ]}
       />
     </div>

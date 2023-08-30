@@ -16,6 +16,7 @@
     "react-dom": "^16.13.1",
     "react-html-parser": "^2.0.2",
     "react-i18next": "^11.3.4",
+    "react-router-dom": "^6.15.0",
     "react-scripts": "^5.0.1",
     "sass": "^1.53.0"
   },
