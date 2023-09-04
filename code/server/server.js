@@ -1,20 +1,85 @@
 /* eslint-disable no-console */
 const express = require('express');
-
 const app = express();
 const { resolve } = require('path');
+const { customerMetadata, customerExists, findCustomerSetupIntent } = require('./utils');
+
 // Replace if using a different env file or config
 require('dotenv').config({ path: './.env' });
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY, { apiVersion:'2022-11-15' });
+const { apiVersion } = require('./config');
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY, { apiVersion });
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+// const { getCustomerPaymentMethodType }  = require('./services')
 
 const allitems = {};
 const fs = require('fs');
 
 const apiBase = `https://api.stripe.com/v1`
 
+
+
+
 app.use(express.static(process.env.STATIC_DIR));
+
+
+// setupIntents =  stripe.setupIntents.list({
+//   customer: 'cus_OZinKz2wnwOFZT'
+// }).then(n=>{
+//   console.log('setupIntents',JSON.stringify(n, false,1))
+// })
+
+// stripe.customers.search({
+//   query: 'name:\'mike\' AND email:\'mike@email.com\'', expand: ['data.payment_method']
+// }).then(n=>{
+//   console.log('cus1',JSON.stringify(n.data))
+// })
+   
+// stripe.customers.retrieve('cus_OZcfJhKEMg5dQp', {
+//   expand: [] }).then(n => {
+//   console.log('cus2', n)
+// })
+
+// stripe.customers.listPaymentMethods(
+//   'cus_OZdUr5QkFqWAkm',
+//   { type: 'card', expand: ['data.customer'] }
+// ).then(n=>{
+//   console.log('listPaymentMethods',JSON.stringify(n.data[0], false,1))
+// }) // returns a list of PaymentMethods data[0] >{}
+
+// const paymentIntents = stripe.paymentIntents.list({
+//   //customer:'cus_OZgHi3Nhyk3arf',
+//   //limit: 3,
+//   expand: ['data.customer']
+// }).then(n=>{
+//   console.log('paymentIntents!!',JSON.stringify(n, false,1))
+// })
+
+// const paymentIntentSearch = stripe.paymentIntents.search({
+//   query: 'id:\'pm_1NmWvmDo67vHA3BFBUTXaRs0\''
+// }).then(n=>{
+//   console.log('paymentIntentSearch!!',JSON.stringify(n, false,1))
+// })
+
+// const paymentIntentRetrieve = stripe.paymentIntents.retrieve(
+//   'pm_1NmWvmDo67vHA3BFBUTXaRs0',
+// ).then(n=>{
+//   console.log('paymentIntentRetrieve!!', JSON.stringify(n, false, 1))
+// })
+
+//
+// "pm_1NmWvmDo67vHA3BFBUTXaRs0"
+
+
+// stripe.customers.search({ query: `name:"mike12345" AND email:"mike12345@email.com" AND metadata['type']:"second_lesson"`, expand: [] }).then(n => {
+//   console.log('customers.search12', JSON.stringify(n, false, 1))
+// })
+
+// stripe.customers.retrieve('cus_OZinKz2wnwOFZT', {
+//   expand: ['invoice_settings.default_payment_method']
+// }).then(n=>{
+//   console.log('cus2', n)
+// })
 
 app.use(
   express.json(
@@ -100,62 +165,90 @@ app.post('/webhook', async (req, res) => {
 //   {
 //        key: <STRIPE_PUBLISHABLE_KEY>
 //   }
-// app.get("/config", (req, res) => {
-//   // TODO: Integrate Stripe
-// });
+
+app.get("/config", (req, res) => {
+  res.send({
+    key:process.env.STRIPE_PUBLISHABLE_KEY
+  })
+
+});
 
 //ATTENTION this is confusing, why do we even have this here, react does not generate a page for this, all rendered from index.html
 // Milestone 1: Signing up
 // Shows the lesson sign up page.
-// app.get('/lessons', (req, res) => {
-//   try {
-//     console.log('running sessons')
-//     const path = resolve(`${process.env.STATIC_DIR}/lessons.html`);
-//     if (!fs.existsSync(path)) throw Error();
-//     console.log('running sessons2')
-//     res.sendFile(path);
-//   } catch (error) {
-//     const path = resolve('./public/static-file-error.html');
-//     res.sendFile(path);
-//   }
-// });
+app.get('/lessons', (req, res) => {
+  try {
+    console.log('running sessons')
+    const path = resolve(`${process.env.STATIC_DIR}/lessons.html`);
+    if (!fs.existsSync(path)) throw Error();
+    console.log('running sessons2')
+    res.sendFile(path);
+  } catch (error) {
+    const path = resolve('./public/static-file-error.html');
+    res.sendFile(path);
+  }
+});
+
+
 
 app.post('/lessons', async (req, res) => {
   try {
-    
-    console.log('lessons', req.body)
-    const { learnerEmail, learnerName } = req.body ||{}
-
+    const { learnerEmail, learnerName, metadata, type } = req.body ||{}
+    // {type} update existing customer or create new 
+    console.log('[lessons][body]', req.body)
     if (!learnerEmail || !learnerName) return res.status(400).send({ error: { message: 'missing learnerEmail or learnerName'}})
 
-    const r = await stripe.customers.create({ email:learnerEmail, name:learnerName })
-  
+    const meta = customerMetadata(metadata ||{})
+    const exists = await customerExists(stripe, { learnerName, learnerEmail })
+    const r = exists.data?.length ? { ...exists.data[0], exist: exists.hasPayment } : { ...(await stripe.customers.create({ email: learnerEmail, name: learnerName, metadata: meta })), exist:false}
 
-    const exists = await stripe.customers.search({ query: `name:"${learnerName}" AND email:"${learnerEmail}"` })
-   
-    if (exists.data?.length){
-      console.log('customer exists', exists.data[0].id)
-      
-      return res.send({
-        exists:true,
-        customer: exists.data[0].id,
-        learnerName: exists.data[0].name,
-        learnerEmail: exists.data[0].email,
-        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+
+    let setupIntent
+
+    if(!r.exist){
+      setupIntent = await stripe.setupIntents.create({
+        customer: r.id,
+        metadata: meta,
+        automatic_payment_methods: {
+          enabled: true,
+        },
       });
     }
+    // mike12345 (mike12345@email.com)
 
+    console.log('[GET][lessons][customer]', r)
+    console.log('[GET][lessons][setupIntent]', setupIntent)
+
+
+    // type
+// :"first_lesson"
+
+    if (r.metadata){
+      r.metadata.index = (()=>{
+        let index 
+        if (r.metadata.type === 'first_lesson') index=0
+        if (r.metadata.type === 'second_lesson') index = 1
+        if (r.metadata.type === 'third_lesson') index = 2
+
+        return index
+      })()
+    }
+
+    // the values are confusing, customer object use as customerId
     return res.send({
-      customer: r.id,
-      learnerName: r.name,
-      learnerEmail: r.email,
+      exist: r.exist,
+      clientSecret: setupIntent?.client_secret,
+      customerId: r.id,
+      ...(r.metadata?{metadata:r.metadata}:{}),
+      name: r.name,
+      email: r.email,
       publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
     });
     
 
   } catch (error) {
 
-    console.log('lessons error', error)
+    console.error('[lessons][error]', error)
     
     res.status(400).send({
       error: {
@@ -165,6 +258,72 @@ app.post('/lessons', async (req, res) => {
 
   }
 });
+
+
+/**
+ * @api lookup https://stripe.com/docs/api/payment_methods/customer_list?lang=node
+ */
+app.get("/payment-method/:customer_id", async (req, res) => {
+
+  const { customer_id } = req.params
+
+  if (!customer_id) return res.status(400).send({ error: { message: 'missing customer_id' } })
+
+  // if 
+  console.log('[GET][payment-method][customer]', customer_id)
+
+  
+
+
+  try {
+    let r
+    // data.payment_method
+    const paymentList = r = (await stripe.customers.listPaymentMethods(
+      customer_id,
+      { type: 'card', expand: ['data.customer'] }
+    ))?.data[0] //{customer,card}
+
+    // if no payment exists get customer instead
+    if (!paymentList) {
+      r = {
+        customer: await stripe.customers.retrieve(customer_id, {
+          expand: ['metadata']
+        })
+      }
+    }
+
+    // find setupIntent
+    let clientSecret
+    let setupIntent
+    const { client_secret } = await findCustomerSetupIntent(stripe, customer_id)
+
+    // if no setupIntent create one
+    if (!client_secret){
+      setupIntent = await stripe.setupIntents.create({
+        customer: r.customer.id,
+        metadata: r.metadata,
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+    }
+
+    clientSecret = client_secret || setupIntent?.client_secret
+
+    res.status(200).send({
+      ...r,
+      clientSecret,
+    })
+  } catch (err) {
+    console.error('[error]', err)
+    return res.status(400).send({ error: err })
+  }
+
+});
+
+
+
+
 
 // TODO: Integrate Stripe
 
@@ -198,6 +357,8 @@ app.post('/lessons', async (req, res) => {
 // }
 app.post("/schedule-lesson", async (req, res) => {
   // TODO: Integrate Stripe
+ 
+
 });
 
 
@@ -228,6 +389,7 @@ app.post("/schedule-lesson", async (req, res) => {
 //
 app.post("/complete-lesson-payment", async (req, res) => {
   // TODO: Integrate Stripe
+
 });
 
 // Milestone 2: '/refund-lesson'
@@ -275,9 +437,6 @@ app.get("/account-update/:customer_id", async (req, res) => {
   }
 });
 
-app.get("/payment-method/:customer_id", async (req, res) => {
-  // TODO: Retrieve the customer's payment method for the client
-});
 
 
 app.post("/update-payment-details/:customer_id", async (req, res) => {

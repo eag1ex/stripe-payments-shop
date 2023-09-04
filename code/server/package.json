@@ -10,6 +10,7 @@
   "author": "stripe-ecosystem",
   "license": "ISC",
   "dependencies": {
+    
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "dotenv": "^8.0.0",
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "eslint": "^6.8.0",
+    "@types/stripe": "^8.0.417",
     "eslint-config-airbnb": "^18.1.0",
     "eslint-plugin-import": "^2.20.2",
     "eslint-plugin-jsx-a11y": "^6.2.3",

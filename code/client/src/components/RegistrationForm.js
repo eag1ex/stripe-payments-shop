@@ -3,23 +3,52 @@ import { loadStripe } from "@stripe/stripe-js";
 import React, { useEffect, useRef, useState } from "react";
 import CardSetupForm from "./CardSetupForm";
 
-import { createCustomer } from '../Services/account'
+import { createCustomer } from '../Services/customer'
 import { Link } from "react-router-dom";
+import { serverConfig } from '../Services/config';
+import { customerObject } from '../utils'
+
+// it would be best to use environment variables, but i dont see that in code.client root, i do understand you want to call it from GET /config, so in order not to rerender the object we declare it before render, as advised in your docs, @source: https://stripe.com/docs/payments/save-and-reuse?platform=web&ui=elements
+
+
+
+// const SERVER_CONFIG = (async () => {
+//   try {
+//     return (await serverConfig())
+//   } catch (err) {
+//     console.error('[SERVER_CONFIG][error]', err)
+//   }
+//   return undefined
+// })()
+
+
+
+const LoadStripe = (async () => {
+  let stripePromise
+  try {
+   const STRIPE_PUBLISHABLE_KEY = (await serverConfig()).key
+    stripePromise = await loadStripe(STRIPE_PUBLISHABLE_KEY);
+  } catch (err) {
+
+  }
+  return stripePromise
+})()
+
 
 const RegistrationForm = (props) => {
-  const { selected, details } = props;
+  const { selected, details,session, onUpdate } = props;
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [learnerEmail, setLearnerEmail] = useState("");
   const [learnerName, setLearnerName] = useState("");
-  const [existingCustomer, setExistingCustomer] = useState(null);
-  const [customerId, setCustomerId] = useState(null);
-  const [clientSecret, setClientSecret] = useState(null);
-  const stripePromise = useRef(null);
-  let appearance = null;
-  // TODO: Integrate Stripe
+  const [customer, setCustomer] = useState(null);
+  const stripePromise = useRef(LoadStripe);
+  const appearance = {}
+
+
 
   const handleChange = async(value, field) => {
+
     if (field === "learnerEmail") setLearnerEmail(value);
     if (field === "learnerName") setLearnerName(value);
   }
@@ -27,46 +56,45 @@ const RegistrationForm = (props) => {
   const handleClickForPaymentElement = async () => {
     if (
       !!learnerEmail && !!learnerName && !processing&&
-      existingCustomer?.customerEmail === learnerEmail && existingCustomer?.customerName === learnerName) {
+      customer?.email === learnerEmail && customer?.name === learnerName) {
       setError(null)
         return false
     }
 
     setError(null);
     setProcessing(true)
-    createCustomer({ learnerEmail, learnerName }).then(n=>{
-      // if (n.exists) setExistingCustomer(n.exists || false)
+    createCustomer({ learnerEmail, learnerName, metadata: session }).then(n=>{
       setProcessing(false)
-      setCustomerId(n.customer)
-      setLearnerEmail(n.learnerEmail)
-      setLearnerName(n.learnerName)
-      // setClientSecret(n.publishableKey)
-      console.log('created customer', n)
+      setCustomer({ clientSecret:n.clientSecret, customerId: n.customerId, email: n.email, name: n.name, card:n.card, exist: n.exist, metadata: n.metadata })
 
-      setExistingCustomer({ customerId: n.customer, customerEmail: n.learnerEmail, customerName: n.learnerName })
+      if (typeof onUpdate ==='function' && n.exist){
+        onUpdate('registration',n.metadata)
+      }
 
     }).catch(e=>{
-      console.log('error', e)
+      console.log('[RegistrationForm][error]', e)
       setError(e.message)
     })
   };
 
-  console.log('selected', selected, props)
+  console.log('[RegistrationForm][session]', session)
+  console.log('[RegistrationForm][customer]', customer)
 
   let body = null;
   if (selected === -1) return body;
-  if (clientSecret) {
+  if (customer?.clientSecret && customer?.exist===false ) {
 
     body = (
-      <Elements stripe={stripePromise.current} options={{appearance, clientSecret}}>
-      <CardSetupForm
-        selected={selected}
-        mode="setup"
-        details={details}
-        learnerEmail={learnerEmail}
-        learnerName={learnerName}
-        customerId={customerId}
-      />
+      <Elements stripe={stripePromise.current} options={{ appearance, clientSecret: customer.clientSecret, theme:'stripe'}}>
+
+        <CardSetupForm
+          customer={customer}
+          selected={selected}
+          mode="setup"
+          session={session}
+          details={details}
+        />
+      
       </Elements>
     )
   } else {
@@ -113,7 +141,7 @@ const RegistrationForm = (props) => {
               <span id="button-text">Checkout</span>
             </button>
         </div>
-        {existingCustomer && (
+          {customer?.exist && (
           <div
             className="sr-field-error"
             id="customer-exists-error"
@@ -123,21 +151,21 @@ const RegistrationForm = (props) => {
             like to update the card on file, please visit{" "}
 
               <Link
-                state={{ customer: existingCustomer}}
+                state={{ customer: customerObject(customer), card: customer?.card, metadata: customer.metadata }}
                 id="account-link"
-                to={`../account-update/${existingCustomer?.customerId}`}
+                to={`../account-update/${customer?.customerId}`}
               >
                 <b>account update</b>
               </Link>
             {"\n"}
             <span id="error_message_customer_email">
-              {existingCustomer?.customerEmail}
+                {customer?.email}
             </span>
             .
           </div>
         )}
       </div>
-      {error && existingCustomer === null && (
+        {error && (customer === null || !customer) && (
         <div className="sr-field-error" id="card-errors" role="alert">
           <div className="card-error" role="alert">
             {error}

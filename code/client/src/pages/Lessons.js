@@ -27,7 +27,8 @@ const formatSession = (index, id, session, time) => {
   }
   date = `${date} ${months[session.getMonth()]}`;
   let title = `${date} ${time}`;
-  return { index, id, title, date, time, selected: "" };
+  let type = `${id}_lesson`;
+  return { index, id, title, date, time, selected: "", type };
 };
 
 //Lessons main component
@@ -47,7 +48,7 @@ const Lessons = () => {
     }
     items[index].selected = "selected";
     setSelected(index);
-    setSessions(items);
+    setSessions(...[items]);
     setDetails(
       `You have requested a lesson for ${items[index].title} \n Please complete this form to reserve your lesson.`
     );
@@ -69,15 +70,21 @@ const Lessons = () => {
   }, []);
 
 
-  console.log('sessions/details', sessions, details)
-  
+  console.log('sessions/details', sessions, details, selected) 
+
   return (
     <main className="main-lessons">
       <Header selected="lessons" />
       {
         //Component to process user info for registration.
       }
-      <RegistrationForm selected={selected} details={details} />
+      <RegistrationForm selected={selected} details={details} session={sessions[selected]} onUpdate={(status,data)=>{
+        console.log('did update!! 1', status, data)
+        if(status==='registration'){
+          toggleItem(data.index)
+          console.log('did update!! 2', status, data)
+        }
+      }} />
       <div className="lesson-title" id="title">
         <h2>Guitar lessons</h2>
       </div>
