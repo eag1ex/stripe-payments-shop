@@ -10,7 +10,7 @@ const metaData = ({type, date, time})=>{
 export const createCustomer = async ({ learnerEmail, learnerName,metadata }) => {
 
 
-    const response = await fetch('/lessons', {
+    const response = await fetch('/api/lessons', {
         method: "post",
         headers: {
             'Accept': 'application/json',

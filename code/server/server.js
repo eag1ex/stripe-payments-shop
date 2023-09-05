@@ -15,7 +15,7 @@ const { apiVersion } = require('./config');
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY, { apiVersion });
 // const { getCustomerPaymentMethodType }  = require('./services')
 
-const apiRouter = require('./routes/api')
+const {apiRouter} = require('./api')
 const allitems = {};
 const apiBase = `https://api.stripe.com/v1`
 const { customerMetadata, customerExists, findCustomerSetupIntent } = require('./utils');
@@ -83,10 +83,37 @@ app.use(express.static(process.env.STATIC_DIR));
 //   console.log('customers.search12', JSON.stringify(n, false, 1))
 // })
 
-// stripe.customers.retrieve('cus_OZinKz2wnwOFZT', {
+
+
+
+
+// stripe.customers.retrieve('cus_Oa4fBHkgqlcREw', {
 //   expand: ['invoice_settings.default_payment_method']
-// }).then(n=>{
+// })
+
+// stripe.paymentIntents.list({ customer: 'cus_Oa4fBHkgqlcREw',expand:['data.customer'] }).then(n => {
 //   console.log('cus2', n)
+// })
+
+// stripe.paymentMethods.retrieve('pm_1NmvLTDo67vHA3BFqXlDbyFt', { expand:['customer'] }).then((n)=>{
+//   console.log('cus2', n)
+// })
+
+
+// paymentIntent = stripe.paymentIntents.create({
+//   setup_future_usage: 'off_session',
+
+//   //    payment_method_options: {
+//   //        card: {}
+//   //    },
+//   // one customer only
+//   //customer: r.id,
+//   //payment_method_types: ['card'],
+//   confirm: false,
+//   metadata: {},
+//   amount: 100,
+//   currency: 'thb',
+//   automatic_payment_methods: { enabled: true },
 // })
 
 app.use(

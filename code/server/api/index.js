@@ -1,7 +1,7 @@
 const express = require('express')
 const apiRouter = express.Router()
 const { resolve } = require('path');
-const { customerMetadata, customerExists, findCustomerSetupIntent } = require('./utils');
+const { customerMetadata, customerExists, findCustomerSetupIntent } = require('../utils');
 
 
 /**
@@ -47,9 +47,10 @@ exports.apiRouter = (stripe) => {
             const r = exists.data?.length ? { ...exists.data[0], exist: exists.hasPayment } : { ...(await stripe.customers.create({ email: learnerEmail, name: learnerName, metadata: meta })), exist: false }
 
 
-            let setupIntent
-
+            // let setupIntent
+            let paymentIntent
             if (!r.exist) {
+
                 setupIntent = await stripe.setupIntents.create({
                     customer: r.id,
                     metadata: meta,
@@ -57,6 +58,22 @@ exports.apiRouter = (stripe) => {
                         enabled: true,
                     },
                 });
+
+
+
+                 paymentIntent = await stripe.paymentIntents.create({
+                    setup_future_usage: 'off_session',
+                    // one customer only
+                     //customer: r.id,
+                    // payment_method_types: ['card'],
+                    confirm: false,
+                    receipt_email: learnerEmail,
+                    metadata: {},
+                    amount: 1000,
+                    currency: 'thb',
+                    automatic_payment_methods: { enabled: true },
+                })     
+      
             }
 
             console.log('[GET][lessons][customer]', r)
@@ -78,9 +95,13 @@ exports.apiRouter = (stripe) => {
             }
 
             // the values are confusing, customer object use as customerId
+            const secrets = {
+                paymentIntent: paymentIntent?.client_secret,
+                setupIntent: setupIntent?.client_secret
+            }
             return res.send({
                 exist: r.exist,
-                clientSecret: setupIntent?.client_secret,
+                ...(!r.exist ? { secrets }:{}),
                 customerId: r.id,
                 ...(r.metadata ? { metadata: r.metadata } : {}),
                 name: r.name,
@@ -103,8 +124,31 @@ exports.apiRouter = (stripe) => {
     });
 
 
+    /**
+     * @api lookup https://stripe.com/docs/api/payment_methods/customer_list?lang=node
+     * @description get payment method details
+     * - This api was added as the milestone one is inconclusive, you cannot retrieve last4 from `setupIntents to stripe.confirmCardSetup on client side, unless creating paymentIntent 
+     * - the mile stone asks the save card details first for later use.
+     * 
+     */
+    apiRouter.get("/card/:payment_method", async (req, res) => {
+        const { payment_method } = req.params
 
+        if (!payment_method) return res.status(400).send({ error: { message: 'missing payment_method' } })
 
+        try {
+            const pm = await stripe.paymentMethods.retrieve(payment_method, { expand: ['customer'] })
+            res.status(200).send({
+                ...pm,
+            })
+        } catch (err) {
+            console.error('[card/:payment_method]', err)
+            res.status(500).send({
+                error: true,
+                message: err.message
+            })
+        }
+    })
 
     /**
      * @api lookup https://stripe.com/docs/api/payment_methods/customer_list?lang=node

@@ -11,17 +11,17 @@ import CardCheckoutForm from './CardCheckoutForm';
       
     const [paymentSucceeded, setPaymentSucceeded] = useState(false);
     const [error, setError] = useState(null);
-    const [last4, setLast4] = useState("");
+    const [checkoutCustomer, setCheckoutCustomer] = useState(null);
 
 
     if (selected === -1) return null;
-    if (paymentSucceeded) return (
+    if (paymentSucceeded && !!checkoutCustomer) return (
       <div className={`lesson-form`}>
         <SignupComplete
           active={paymentSucceeded}
-          email={customer?.email}
-          last4={last4}
-          customer_id={customer?.customerId}
+          email={checkoutCustomer.customer?.email}
+          last4={checkoutCustomer.card.last4}
+          customer_id={checkoutCustomer.customer?.id}
         />
       </div>
     )
@@ -43,9 +43,23 @@ import CardCheckoutForm from './CardCheckoutForm';
                 <span>{customer?.name} ({customer?.email})</span>
                   </div>
                   <div className="lesson-payment-element">
-             
-                   
-                <CardCheckoutForm state={'setup'} customer={customer} session={session}/>
+                <CardCheckoutForm state={'setup'} customer={customer} session={session} onSuccessfulConfirmation={(status, result) => {
+
+                  if (status === 'success') {
+                    setPaymentSucceeded(true)
+                    setCheckoutCustomer(result)
+                    console.log('success', result)
+                  }
+
+                  if (status === 'pm-error') {
+                    console.error('pm-error', result)
+                  }
+                  if (status === 'setup-error') {
+                    console.error('setup-error', result)
+                    
+                  }
+
+                }} />
                   </div>
                 </div>
               </div>

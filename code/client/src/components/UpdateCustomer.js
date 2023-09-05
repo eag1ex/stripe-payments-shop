@@ -15,7 +15,7 @@ const LoadStripe = (async () => {
   let stripePromise
   try {
     const STRIPE_PUBLISHABLE_KEY = (await serverConfig()).key
-    stripePromise = await loadStripe(STRIPE_PUBLISHABLE_KEY);
+    stripePromise = await loadStripe(STRIPE_PUBLISHABLE_KEY, { apiVersion: '2022-11-15' });
   } catch (err) {
 
   }

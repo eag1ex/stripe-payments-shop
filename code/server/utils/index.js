@@ -15,15 +15,18 @@ exports.customerMetadata = ({ type, date, time, }) => {
 exports.customerExists = async(stripe,{ learnerName, learnerEmail }) => {
     try {
 
-        /**
-         * @returns {customer, card} || undefined
-         */
+        // /**
+        //  * @returns {customer, card} || undefined
+        //  */
         const listPaymentMethod = async()=>{
          return (await stripe.customers.listPaymentMethods(
                 customer_id,
              { type: 'card', expand: ['data.customer'] }
             ))?.data[0]
         }
+        // stripe.paymentIntents.list({ customer: 'cus_Oa4fBHkgqlcREw', expand: ['data.customer'] }).then(n => {
+        //     console.log('cus2', n)
+        // })
         
         let cus
 

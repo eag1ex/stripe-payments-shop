@@ -11,7 +11,7 @@ import { customerObject } from '../utils'
 // it would be best to use environment variables, but i dont see that in code.client root, i do understand you want to call it from GET /config, so in order not to rerender the object we declare it before render, as advised in your docs, @source: https://stripe.com/docs/payments/save-and-reuse?platform=web&ui=elements
 
 
-
+ 
 // const SERVER_CONFIG = (async () => {
 //   try {
 //     return (await serverConfig())
@@ -26,10 +26,11 @@ import { customerObject } from '../utils'
 const LoadStripe = (async () => {
   let stripePromise
   try {
-   const STRIPE_PUBLISHABLE_KEY = (await serverConfig()).key
-    stripePromise = await loadStripe(STRIPE_PUBLISHABLE_KEY);
-  } catch (err) {
+    const STRIPE_PUBLISHABLE_KEY = (await serverConfig()).key
 
+    stripePromise = await loadStripe(STRIPE_PUBLISHABLE_KEY, { apiVersion: '2022-11-15'});
+  } catch (err) {
+    console.error('[LoadStripe][error]', err)
   }
   return stripePromise
 })()
@@ -44,9 +45,7 @@ const RegistrationForm = (props) => {
   const [customer, setCustomer] = useState(null);
   const stripePromise = useRef(LoadStripe);
   const appearance = {}
-
-
-
+  
   const handleChange = async(value, field) => {
 
     if (field === "learnerEmail") setLearnerEmail(value);
@@ -61,11 +60,19 @@ const RegistrationForm = (props) => {
         return false
     }
 
+    /**
+     
+    const secrets = {
+                paymentIntent: paymentIntent?.client_secret,
+                setupIntent: setupIntent?.client_secret
+            }
+     */
+
     setError(null);
     setProcessing(true)
     createCustomer({ learnerEmail, learnerName, metadata: session }).then(n=>{
       setProcessing(false)
-      setCustomer({ clientSecret:n.clientSecret, customerId: n.customerId, email: n.email, name: n.name, card:n.card, exist: n.exist, metadata: n.metadata })
+      setCustomer({ secrets:n.secrets, customerId: n.customerId, email: n.email, name: n.name, card:n.card, exist: n.exist, metadata: n.metadata })
 
       if (typeof onUpdate ==='function' && n.exist){
         onUpdate('registration',n.metadata)
@@ -82,10 +89,10 @@ const RegistrationForm = (props) => {
 
   let body = null;
   if (selected === -1) return body;
-  if (customer?.clientSecret && customer?.exist===false ) {
+  if (customer?.secrets?.setupIntent && customer?.exist===false ) {
 
     body = (
-      <Elements stripe={stripePromise.current} options={{ appearance, clientSecret: customer.clientSecret, theme:'stripe'}}>
+      <Elements stripe={stripePromise.current} options={{ appearance, clientSecret: customer?.secrets?.setupIntent, theme:'stripe'}}>
 
         <CardSetupForm
           customer={customer}
@@ -93,6 +100,8 @@ const RegistrationForm = (props) => {
           mode="setup"
           session={session}
           details={details}
+       
+          //onSuccessfulConfirmation('success', result.setupIntent)
         />
       
       </Elements>
