@@ -1,5 +1,4 @@
 
-import { urlPath } from '../utils/index';
 
 const metaData = ({type, date, time})=>{
     return{
@@ -11,7 +10,7 @@ const metaData = ({type, date, time})=>{
 export const createCustomer = async ({ learnerEmail, learnerName,metadata }) => {
 
 
-    const response = await fetch(urlPath('/lessons'), {
+    const response = await fetch('/lessons', {
         method: "post",
         headers: {
             'Accept': 'application/json',

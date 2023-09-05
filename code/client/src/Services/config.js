@@ -1,8 +1,7 @@
 
-import { urlPath } from '../utils/index';
 
 export const serverConfig = async () => {
-    const response = await fetch(urlPath(`/config`), {
+    const response = await fetch(`/api/config`, {
         method: "get",
         headers: {
             "Content-Type": "application/json",

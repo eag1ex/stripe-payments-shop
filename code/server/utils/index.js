@@ -1,5 +1,7 @@
-exports.customerMetadata = ({ type, date, time }) => {
+exports.customerMetadata = ({ type, date, time, }) => {
     return {
+        // to satisfy stripe's metadata requirements
+        first_lesson: date,
         type,
         date,
         time

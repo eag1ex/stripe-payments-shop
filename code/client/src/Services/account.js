@@ -1,9 +1,8 @@
 
-import { urlPath } from '../utils/index';
 
 // Get info to load page, User payment information
 export const accountUpdate = async (id) => {
-  const response = await fetch(urlPath(`/payment-method/${id}`), {
+  const response = await fetch(`/api/payment-method/${id}`, {
     method: "get",
     headers: {
       "Content-Type": "application/json",
