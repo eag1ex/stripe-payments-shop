@@ -1,0 +1,10 @@
+{
+  "title": "Stripe Checkout",
+  "headline": "Annual Spring Academy Concert",
+  "subline": "Showcasing the best from our young artists program.",
+  "date": "May 24, 2020",
+  "sr-legal-text": "Number of tickets (max 10)",
+  "button": {
+    "submit": "Buy for {{total}}"
+  }
+}

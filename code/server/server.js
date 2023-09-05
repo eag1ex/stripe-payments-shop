@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 const express = require('express');
 const app = express();
-const { resolve } = require('path');
+const { resolve, join } = require('path');
 // Replace if using a different env file or config
 require('dotenv').config({ path: './.env' });
 const cors = require('cors');
@@ -21,13 +21,28 @@ const apiBase = `https://api.stripe.com/v1`
 const { customerMetadata, customerExists, findCustomerSetupIntent } = require('./utils');
 
 
-
-
 app.set('trust proxy', 1) // trust first proxy
 app.use(morgan('dev'))
-app.engine('html', ejs.__express) // ejs.renderFile
+app.engine('html', ejs.__express) 
 app.set('view engine', 'html')
 app.use(bodyParser.urlencoded({ extended: false }))
+
+
+app.use((req, res, next) => {
+  try{
+    // fixed manifest issue
+    if (/manifest.json/i.test(req.path)) {
+      res.header("Content-Type", 'application/json');
+      const manifest = JSON.parse(fs.readFileSync(join(__dirname, process.env.STATIC_DIR, 'manifest.json'), 'utf8'));
+      return res.status(200).json(manifest);
+
+    }
+  }catch(err){
+    return res.status(200).json({});
+  }
+  return next();
+});
+
 app.use(express.static(process.env.STATIC_DIR));
 
 
@@ -207,10 +222,18 @@ app.post('/webhook', async (req, res) => {
 app.use('/api', apiRouter(stripe))
 
 // catch all other routes
-app.all('*', function (req, res) {
-  res.status(400).json({ message:'route not found', error: true })
-})
+// app.all('*', function (req, res) {
+//   res.status(400).json({ message:'route not found', error: true })
+// })
 
+//Serving React
+app.get('*', (req, res) => {
+
+  res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+  res.header('Expires', '-1');
+  res.header('Pragma', 'no-cache');
+  res.sendFile(join(__dirname, process.env.STATIC_DIR, 'index.html'));
+});
 
 function errorHandler(err, req, res, next) {
   res.status(500).send({ error: { message: err.message } });

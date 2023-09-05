@@ -1,0 +1,10 @@
+{
+  "title": "Stripe Checkout サンプル",
+  "headline": "年次春アカデミーコンサート",
+  "subline": "若いアーティストのプログラムから最高のものを紹介します。",
+  "date": "2020年5月24日",
+  "sr-legal-text": "チケット数（最大10）",
+  "button": {
+    "submit": "購入する {{total}}"
+  }
+}
