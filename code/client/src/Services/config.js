@@ -1,3 +1,4 @@
+import { errorHandler } from "../utils";
 
 
 export const serverConfig = async () => {
@@ -10,7 +11,7 @@ export const serverConfig = async () => {
     if (!response.ok) {
         console.log(response);
         console.log("Server Config: Error happened while fetching data");
-        return null;
+        return await errorHandler(response);
     }
     const data = await response.json();
     return data;

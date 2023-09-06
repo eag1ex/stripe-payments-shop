@@ -6,10 +6,11 @@ import "../css/lessons.scss";
 import { accountUpdate } from "../Services/account";
 import { useLocation } from 'react-router-dom';
 import { useMatch } from "react-router-dom";
-
+import DocumentTitle from "../components/DocumentTitle";
 
 //Component responsable to update user's info.
 const AccountUpdate = () => {
+  DocumentTitle('Account Details')
 
   const { pathname, hash, key, state } = useLocation();
   const customerData = state?.customer

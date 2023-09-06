@@ -86,15 +86,17 @@ const CardCheckoutForm = (props) => {
                onSuccessfulConfirmation('pm-error',e)
                setLoading(false)
            })
-
         }
     };
 
 
-
     return (<form onSubmit={handleClick}>
         <CardSection state={state} />
-        <button disabled={!stripe || loading===true}>Save card</button>
+        <button id="submit" disabled={!stripe || loading === true}>  {loading ? (
+            <div className="spinner" id="spinner"></div>
+        ) : (
+            <span id="button-text">Save card</span>
+        )}</button>
     </form>)
     
 }

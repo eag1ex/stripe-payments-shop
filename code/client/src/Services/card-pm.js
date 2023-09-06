@@ -1,3 +1,5 @@
+import { errorHandler } from "../utils";
+
 /**
  * Get card payment details
  * @api {{baseUrl}}/v1/payment_methods/:payment_method
@@ -14,7 +16,7 @@ export const cardPm = async (payment_method) => {
     if (!response.ok) {
         console.log(response);
         console.log("Card pm: Error happened while fetching data");
-        return null;
+        return await errorHandler(response);
     }
     const data = await response.json();
     return data;

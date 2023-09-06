@@ -71,6 +71,7 @@ const RegistrationForm = (props) => {
     setError(null);
     setProcessing(true)
     createCustomer({ learnerEmail, learnerName, metadata: session }).then(n=>{
+      console.log('[RegistrationForm][createCustomer]', n)
       setProcessing(false)
       setCustomer({ secrets:n.secrets, customerId: n.customerId, email: n.email, name: n.name, card:n.card, exist: n.exist, metadata: n.metadata })
 
@@ -81,6 +82,7 @@ const RegistrationForm = (props) => {
     }).catch(e=>{
       console.log('[RegistrationForm][error]', e)
       setError(e.message)
+      setProcessing(false)
     })
   };
 
@@ -122,6 +124,7 @@ const RegistrationForm = (props) => {
           <div className="lesson-input-box first">
             <label>Name</label>
             <input
+              required
               type="text"
               id="name"
               value={learnerName}
@@ -134,6 +137,7 @@ const RegistrationForm = (props) => {
           <div className="lesson-input-box middle">
             <label>Email</label>
             <input
+              required
               type="text"
               id="email"
               value={learnerEmail}
@@ -146,9 +150,11 @@ const RegistrationForm = (props) => {
               id="checkout-btn"
               disabled={!learnerName || !learnerEmail || processing}
               onClick={handleClickForPaymentElement}
-            >
-              <span id="button-text">Checkout</span>
+            >{processing ? (<div className="spinner" id="spinner"></div>) : (
+              <span id="button-text">Save Checkout</span>)}
             </button>
+
+
         </div>
           {customer?.exist && (
           <div

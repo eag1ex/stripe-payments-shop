@@ -10,8 +10,7 @@ const morgan = require('morgan')
 const bodyParser = require('body-parser')
 const ejs = require('ejs')
 const fs = require('fs');
-
-const { apiVersion } = require('./config');
+const { apiVersion, clientDir } = require('./config');
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY, { apiVersion });
 // const { getCustomerPaymentMethodType }  = require('./services')
 
@@ -33,7 +32,7 @@ app.use((req, res, next) => {
     // fixed manifest issue
     if (/manifest.json/i.test(req.path)) {
       res.header("Content-Type", 'application/json');
-      const manifest = JSON.parse(fs.readFileSync(join(__dirname, process.env.STATIC_DIR, 'manifest.json'), 'utf8'));
+      const manifest = JSON.parse(fs.readFileSync(join(__dirname, process.env.STATIC_DIR, clientDir,'manifest.json'), 'utf8'));
       return res.status(200).json(manifest);
 
     }
@@ -43,7 +42,7 @@ app.use((req, res, next) => {
   return next();
 });
 
-app.use(express.static(process.env.STATIC_DIR));
+app.use(express.static(join(process.env.STATIC_DIR, clientDir)));
 
 
 // setupIntents =  stripe.setupIntents.list({
@@ -232,7 +231,7 @@ app.get('*', (req, res) => {
   res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
   res.header('Expires', '-1');
   res.header('Pragma', 'no-cache');
-  res.sendFile(join(__dirname, process.env.STATIC_DIR, 'index.html'));
+  res.sendFile(join(__dirname, process.env.STATIC_DIR, clientDir, 'index.html'));
 });
 
 function errorHandler(err, req, res, next) {

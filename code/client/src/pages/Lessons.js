@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import {  useLocation } from 'react-router-dom';
 import RegistrationForm from "../components/RegistrationForm";
 import "../css/lessons.scss";
-
+import DocumentTitle from "../components/DocumentTitle";
 const months = [
   "Jan",
   "Feb",
@@ -33,9 +33,9 @@ const formatSession = (index, id, session, time) => {
 
 //Lessons main component
 const Lessons = () => {
-  const { pathname, hash, key, state } = useLocation();
-
-  console.log('Lessons/pathname', pathname, hash, key, state)
+  DocumentTitle('Lessons Courses')
+  // const { pathname, hash, key, state } = useLocation();
+  
   const [sessions, setSessions] = useState([]); //info about available sessions
   const [selected, setSelected] = useState(-1); //index of selected session
   const [details, setDetails] = useState(""); //details about selected session

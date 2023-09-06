@@ -29,10 +29,10 @@ exports.customerExists = async(stripe,{ learnerName, learnerEmail }) => {
         // })
         
         let cus
-
-        cus = await stripe.customers.search({ query: `name:"${learnerName}" AND email:"${learnerEmail}"`, expand: [] })
+        // `name:"${learnerName}" AND email:"${learnerEmail}"`
+        cus = await stripe.customers.search({ query: `email:"${learnerEmail}"`, expand: [] })
         const customer_id = cus.data?.length ? cus.data[0].id : null
-        let hasPayment = false
+        let exist = !!customer_id
         if (customer_id) {
 
             console.log('[customerExists]', { customer_id, name: cus.data[0].name, email: cus.data[0].email})
@@ -40,11 +40,11 @@ exports.customerExists = async(stripe,{ learnerName, learnerEmail }) => {
             const paymentList = await listPaymentMethod(customer_id)
             if (paymentList) {
                 cus = { data: [{ ...paymentList, ...cus.data[0] }]}
-                hasPayment = true
+                exist = true
             }
         }
       
-        return { data: cus.data[0] ? [cus.data[0]] : [], hasPayment }
+        return { data: cus.data[0] ? [cus.data[0]] : [], exist }
         // 
     } catch (e) {
         console.error('[customerExists][error]', e)

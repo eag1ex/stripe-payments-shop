@@ -2,8 +2,10 @@ import React from "react";
 import Header from "../components/Header";
 import SRECard from "../components/SRECard";
 import "../css/global.scss";
+import DocumentTitle from "../components/DocumentTitle";
 //Show home page
 const Home = () => {
+  DocumentTitle('Home')
   return (
     <main className="main-global">
       <Header selected="home" />

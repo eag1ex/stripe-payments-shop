@@ -1,4 +1,4 @@
-
+import { errorHandler } from "../utils";
 
 const metaData = ({type, date, time})=>{
     return{
@@ -7,8 +7,9 @@ const metaData = ({type, date, time})=>{
         time
     }
 }
-export const createCustomer = async ({ learnerEmail, learnerName,metadata }) => {
 
+
+export const createCustomer = async ({ learnerEmail, learnerName,metadata }) => {
 
     const response = await fetch('/api/lessons', {
         method: "post",
@@ -19,9 +20,9 @@ export const createCustomer = async ({ learnerEmail, learnerName,metadata }) => 
         body: JSON.stringify({ learnerEmail, learnerName, metadata: metaData(metadata) })
     });
     if (!response.ok) {
-        console.log(response);
+        
         console.log("Create customer: Error happened while fetching data");
-        return null;
+        return await errorHandler(response)
     }
     const data = await response.json();
     return data;

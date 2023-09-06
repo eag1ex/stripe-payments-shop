@@ -44,10 +44,10 @@ exports.apiRouter = (stripe) => {
 
             const meta = customerMetadata(metadata || {})
             const exists = await customerExists(stripe, { learnerName, learnerEmail })
-            const r = exists.data?.length ? { ...exists.data[0], exist: exists.hasPayment } : { ...(await stripe.customers.create({ email: learnerEmail, name: learnerName, metadata: meta })), exist: false }
+            const r = exists.data?.length ? { ...exists.data[0], exist: exists.exist } : { ...(await stripe.customers.create({ email: learnerEmail, name: learnerName, metadata: meta })), exist: false }
 
 
-            // let setupIntent
+            let setupIntent
             let paymentIntent
             if (!r.exist) {
 
@@ -58,8 +58,6 @@ exports.apiRouter = (stripe) => {
                         enabled: true,
                     },
                 });
-
-
 
                  paymentIntent = await stripe.paymentIntents.create({
                     setup_future_usage: 'off_session',
@@ -163,8 +161,6 @@ exports.apiRouter = (stripe) => {
         console.log('[GET][payment-method][customer]', customer_id)
 
 
-
-
         try {
             let r
             // data.payment_method
@@ -176,9 +172,7 @@ exports.apiRouter = (stripe) => {
             // if no payment exists get customer instead
             if (!paymentList) {
                 r = {
-                    customer: await stripe.customers.retrieve(customer_id, {
-                        expand: ['metadata']
-                    })
+                    customer: await stripe.customers.retrieve(customer_id)
                 }
             }
 
