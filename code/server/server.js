@@ -1,9 +1,15 @@
 /* eslint-disable no-console */
+require('dotenv').config({ path: './.env' });
+
+// do not remove
+require('./_preset');
+
+
 const express = require('express');
 const app = express();
 const { resolve, join } = require('path');
 // Replace if using a different env file or config
-require('dotenv').config({ path: './.env' });
+
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const morgan = require('morgan')

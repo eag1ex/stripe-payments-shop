@@ -47,17 +47,17 @@ exports.apiRouter = (stripe) => {
             const r = exists.data?.length ? { ...exists.data[0], exist: exists.exist } : { ...(await stripe.customers.create({ email: learnerEmail, name: learnerName, metadata: meta })), exist: false }
 
 
-            let setupIntent
+            // let setupIntent
             let paymentIntent
             if (!r.exist) {
 
-                setupIntent = await stripe.setupIntents.create({
-                    customer: r.id,
-                    metadata: meta,
-                    automatic_payment_methods: {
-                        enabled: true,
-                    },
-                });
+                // setupIntent = await stripe.setupIntents.create({
+                //     customer: r.id,
+                //     metadata: meta,
+                //     automatic_payment_methods: {
+                //         enabled: true,
+                //     },
+                // });
 
                  paymentIntent = await stripe.paymentIntents.create({
                     setup_future_usage: 'off_session',
@@ -75,7 +75,7 @@ exports.apiRouter = (stripe) => {
             }
 
             console.log('[GET][lessons][customer]', r)
-            console.log('[GET][lessons][setupIntent]', setupIntent)
+            console.log('[GET][lessons][paymentIntent]', paymentIntent)
 
 
             // type
@@ -95,7 +95,7 @@ exports.apiRouter = (stripe) => {
             // the values are confusing, customer object use as customerId
             const secrets = {
                 paymentIntent: paymentIntent?.client_secret,
-                setupIntent: setupIntent?.client_secret
+                // setupIntent: setupIntent?.client_secret
             }
             return res.send({
                 exist: r.exist,

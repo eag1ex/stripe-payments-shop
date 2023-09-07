@@ -27,8 +27,8 @@ const App = () => {
           <Routes>
           <Route path="/" element={<Layout history={history} />}>
               <Route path="" element={<Home path="/" />} />
-            <Route path="lessons" element={<Lessons path="/lessons" />} />
-              <Route exact path="account-update/:id" element={<AccountUpdate path="/lessons" />} />
+            <Route path="lessons" element={<Lessons />} />
+              <Route exact path="account-update/:id" element={<AccountUpdate  />} />
             </Route>
          
 

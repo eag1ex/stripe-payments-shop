@@ -1,27 +1,28 @@
 import React, { useState } from "react";
 import SignupComplete from "./SignupComplete";
 import CardCheckoutForm from './CardCheckoutForm';
-
+import { Routes, Route, useParams } from 'react-router-dom';
 
 
 
   const CardSetupForm = (props) => {
+    
     const { session, selected, mode, details,customer, onSuccessfulConfirmation } =
       props;
       
     const [paymentSucceeded, setPaymentSucceeded] = useState(false);
     const [error, setError] = useState(null);
-    const [checkoutCustomer, setCheckoutCustomer] = useState(null);
+    const [checkoutBilling, setCheckoutBilling] = useState(null);
 
 
     if (selected === -1) return null;
-    if (paymentSucceeded && !!checkoutCustomer) return (
+    if (paymentSucceeded && !!checkoutBilling) return (
       <div className={`lesson-form`}>
         <SignupComplete
           active={paymentSucceeded}
-          email={checkoutCustomer.customer?.email}
-          last4={checkoutCustomer.card.last4}
-          customer_id={checkoutCustomer.customer?.id}
+          email={checkoutBilling.billing_details?.email}
+          last4={checkoutBilling.card.last4}
+          customer_id={customer?.customerId}
         />
       </div>
     )
@@ -47,11 +48,12 @@ import CardCheckoutForm from './CardCheckoutForm';
 
                   if (status === 'success') {
                     setPaymentSucceeded(true)
-                    setCheckoutCustomer(result)
+                    setCheckoutBilling(result)
                     console.log('success', result)
                   }
 
                   if (status === 'pm-error') {
+                    setError()
                     console.error('pm-error', result)
                   }
                   if (status === 'setup-error') {
@@ -63,13 +65,13 @@ import CardCheckoutForm from './CardCheckoutForm';
                   </div>
                 </div>
               </div>
-              {error && (
+              {/* {error && (
                 <div className="sr-field-error" id="card-errors" role="alert">
                   <div className="card-error" role="alert">
                     {error}
                   </div>
                 </div>
-              )}
+              )} */}
             </div>
         </div>
     )

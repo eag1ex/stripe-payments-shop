@@ -2,7 +2,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 //Show Nav Menu
 const EcoNav = ({ links }) => {
-  console.log('links are', links)
   return (
     <nav>
       <div className="logo">

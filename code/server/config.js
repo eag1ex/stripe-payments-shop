@@ -1,2 +1,2 @@
 exports.apiVersion = '2022-11-15'
-exports.clientDir = 'client'
+exports.clientDir = 'build'

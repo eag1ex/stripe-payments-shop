@@ -40,3 +40,15 @@ export const errorHandler = async (errResponse) => {
         throw new Error(err)
     }
 }
+
+// The payment has been processed!
+export const checkoutResp = (d) => {
+    try {
+        return {
+            card: d?.payment_method?.card,
+            billing_details: d?.payment_method?.billing_details
+        }
+    } catch (err) {
+    }
+    return {}
+}

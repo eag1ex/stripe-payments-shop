@@ -1,4 +1,4 @@
-import { Elements } from "@stripe/react-stripe-js";
+import { Elements, AddressElement } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import React, { useEffect, useRef, useState } from "react";
 import CardSetupForm from "./CardSetupForm";
@@ -37,6 +37,9 @@ const LoadStripe = (async () => {
 
 
 const RegistrationForm = (props) => {
+
+
+
   const { selected, details,session, onUpdate } = props;
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -44,7 +47,9 @@ const RegistrationForm = (props) => {
   const [learnerName, setLearnerName] = useState("");
   const [customer, setCustomer] = useState(null);
   const stripePromise = useRef(LoadStripe);
-  const appearance = {}
+  const appearance = {
+    labels: 'floating'
+  }
   
   const handleChange = async(value, field) => {
 
@@ -53,6 +58,7 @@ const RegistrationForm = (props) => {
   }
   
   const handleClickForPaymentElement = async () => {
+    if (processing) return false
     if (
       !!learnerEmail && !!learnerName && !processing&&
       customer?.email === learnerEmail && customer?.name === learnerName) {
@@ -86,23 +92,22 @@ const RegistrationForm = (props) => {
     })
   };
 
-  console.log('[RegistrationForm][session]', session)
-  console.log('[RegistrationForm][customer]', customer)
+  // console.log('[RegistrationForm][session]', session)
+  // console.log('[RegistrationForm][customer]', customer)
 
   let body = null;
   if (selected === -1) return body;
-  if (customer?.secrets?.setupIntent && customer?.exist===false ) {
+  if (customer?.secrets?.paymentIntent && customer?.exist===false ) {
 
     body = (
-      <Elements stripe={stripePromise.current} options={{ appearance, clientSecret: customer?.secrets?.setupIntent, theme:'stripe'}}>
-
+      <Elements stripe={stripePromise.current} options={{ appearance, clientSecret: customer?.secrets?.paymentIntent,  loader:'auto'}}>
+      
         <CardSetupForm
           customer={customer}
           selected={selected}
           mode="setup"
           session={session}
           details={details}
-       
           //onSuccessfulConfirmation('success', result.setupIntent)
         />
       

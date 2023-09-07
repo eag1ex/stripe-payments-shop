@@ -1,104 +1,122 @@
-import React from "react";
+import React, { useState } from "react";
 import {
-    PaymentElement, useElements, useStripe, CardElement
+    PaymentElement, useElements, useStripe, LinkAuthenticationElement, CardElement, AddressElement
 } from "@stripe/react-stripe-js";
-import CardSection from "./CardSection";
-import {cardPm} from '../Services/card-pm'
-
+import { checkoutResp } from '../utils/index';
 
 
 const CardCheckoutForm = (props) => {
-    const [loading, setLoading]= React.useState(null)
-    const { state,customer, session, onSuccessfulConfirmation } = props;
+    const [message, setMessage] = useState(null);
+    const [status, setStatus] = useState('initial') // initial | loading | ready | exit
+    const { customer,  onSuccessfulConfirmation } = props;
     const stripe = useStripe();
     const elements = useElements();
 
-    // console.log('CardCheckoutForm/stripe', stripe)
-    // console.log('CardCheckoutForm/elements', elements)
-    // console.log('clientSecret', clientSecret)
-    // console.log('[customerId]', customerId)
-        // **
-     
-    // const secrets = {
-    //   paymentIntent: paymentIntent?.client_secret,
-    //   setupIntent: setupIntent?.client_secret
-    // }
-    //   * /
-
-
-    // todo we need to change this handler
     const handleClick = async (e) => {
         e.preventDefault();
-        if (!stripe || !elements) {
-            // Stripe.js hasn't yet loaded.
-            // Make sure to disable form submission until Stripe.js has loaded.
-            return;
-        }
-        setLoading(true)
+        if (!stripe || !elements || status === 'loading') return;
+        setStatus('loading')
 
-        // 
-        // stripe.confirmCardSetup
-        
-        const r1 = await stripe.confirmCardSetup(customer?.secrets?.setupIntent, {
-            payment_method: {
-                metadata: {
-                    type: `${session.id}_lesson`,
-                    date: session.date,
-                    time: session.time,
+        try {
+            const { error, paymentIntent } = await stripe.confirmPayment({
+                
+                elements,
+                redirect:'if_required',
+                confirmParams: {
+                    expand: ['payment_method'], // add "customer" ?
+                    save_payment_method: this,
+                    payment_method_data: {
+
+                        billing_details: {
+                            email: customer.email,
+                            name: customer.name,
+                        }
+                    },
+                    // Make sure to change this to your payment completion page
+                  // return_url: `${window.location.origin}/completion`,
                 },
-                card: elements.getElement(CardElement),
-                billing_details: {
-                    email: customer.email,
-                    name: customer.name,
-                },
-            },
-        })
-       
-        // console.log(' r1.setupIntent.client_secret', r1.setupIntent.client_secret)
-        // const r2 = await stripe.confirmCardPayment(r1.setupIntent.client_secret, {
-        //     card: elements.getElement(CardElement),
-        //     billing_details: {
-        //         email: customer.email,
-        //         name: customer.name,
-        //     }
-        // })
-       
-        if (r1.error) {
-            // Show error to your customer (for example, insufficient funds)
-            console.log(r1.error.message);
-            if (typeof onSuccessfulConfirmation === 'function') onSuccessfulConfirmation('setup-error', r1.error)
-            setLoading(false)
-        }
-        // The payment has been processed!
-        if (r1?.setupIntent?.status === 'succeeded') {
+            })
 
-            // Show a success message to your customer
-            // There's a risk of the customer closing the window before callback
-            // execution. Set up a webhook or plugin to listen for the
-            // payment_intent.succeeded event that handles any business critical
-            // post-payment actions.
-           const { payment_method } = r1.setupIntent
+          
+            if (error?.type === "card_error" || error?.type === "validation_error") {
+                console.log(error.message);
+                setMessage(error.message);
+                setStatus('initial')
+                return 
+            }
+            if (error) {
+                // Show error to your customer (for example, insufficient funds)
+                console.log(error.message);
+                if (typeof onSuccessfulConfirmation === 'function') onSuccessfulConfirmation('setup-error', error.message)
+                setStatus('initial')
+                setMessage(error.message);
+                return
+            }
+            
+            // The payment has been processed!
+            onSuccessfulConfirmation('success', checkoutResp({ ...paymentIntent }))
 
-           cardPm(payment_method).then(n=>{
-               if (typeof onSuccessfulConfirmation === 'function') onSuccessfulConfirmation('success', n)
-               setLoading(false)
-           }).catch(e=>{
-               onSuccessfulConfirmation('pm-error',e)
-               setLoading(false)
-           })
+        } catch (err) {
+            setStatus('initial')
+            onSuccessfulConfirmation('pm-error', err)
         }
+
     };
 
 
     return (<form onSubmit={handleClick}>
-        <CardSection state={state} />
-        <button id="submit" disabled={!stripe || loading === true}>  {loading ? (
-            <div className="spinner" id="spinner"></div>
-        ) : (
-            <span id="button-text">Save card</span>
-        )}</button>
+        <div style={{ marginBottom: 20, marginTop: 5, }}>
+            {/* <LinkAuthenticationElement id="link-authentication-element"
+            // Access the email value like so:
+            onChange={(event) => {
+                console.log('LinkAuthenticationElement/value', event.value)
+            }}
+                options={{ defaultValues: { email: customer.email, name: customer.name  }}}
+            /> */}
+            <PaymentElement className="card" options={{
+                paymentMethodOrder: ['card'],
+                defaultValues: { billingDetails: { name: customer.name, email: customer.email } }, layout: { type: "tabs" },
+
+            }} />
+
+
+            {/* <div id="card-element" className="card" style={{  marginBottom: 10 }}>
+                <div  className="lesson-info smaller" style={{ marginTop: 5, marginBottom:10 }}>
+                    Card details
+                </div>
+                <CardElement options={CARD_ELEMENT_OPTIONS} />
+            </div>
+
+
+            <div id="address-element" className="card-address" >
+                <div className="lesson-info smaller" style={{ marginTop: 5, marginBottom: 10 }}>
+                    Billing Address
+                </div>
+                <AddressElement onReady={(e)=>{
+                    console.log('eeee is', e)
+                }} options={{ defaultValues: { name: customer.name || '' }, display: { name: 'full', }, allowedCountries: ['US', 'TH'], mode: 'billing', autocomplete: { mode: 'automatic' }, fields: { address: {line1:'never'} } }} />
+
+            </div> */}
+
+
+            <button id="submit" disabled={!stripe || status === 'loading'}>  {status === 'loading' ? (
+                <div className="spinner" id="spinner"></div>
+            ) : (
+                <span id="button-text">Confirm initial payment</span>
+            )}</button>
+            {/* {message && <div id="payment-message" className="lesson-info smaller" style={{marginTop:5}}>{message}</div>} */}
+            {message && (
+                <div className="sr-field-error" id="card-errors" role="alert">
+                    <div className="card-error" role="alert">
+                        {message}
+                    </div>
+                </div>
+            )}    
+
+        </div>
+
     </form>)
-    
+
 }
 
 export default CardCheckoutForm
