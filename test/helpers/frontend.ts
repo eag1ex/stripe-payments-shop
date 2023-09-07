@@ -53,22 +53,22 @@ export const fillCardDetails = async (page: Page, card) => {
     await stripeIframe.getByLabel('Country').selectOption('US');
 
     // Fill [placeholder="Card number"]
-    // await stripeIframe.getByLabel('Card number').clear();
-    // await stripeIframe.getByLabel('Card number').type(card, {delay: TYPE_DELAY, timeout:1500});
+    await stripeIframe.getByLabel('Card number').clear();
+    await stripeIframe.getByLabel('Card number').type(card, { delay: TYPE_DELAY, timeout: 1500 });
 
-    // // Fill [placeholder="MM \/ YY"]
-    // await stripeIframe.getByLabel('Expiration').clear();
-    // await stripeIframe.getByLabel('Expiration').type('04 / 30', {delay: TYPE_DELAY});
+    // Fill [placeholder="MM \/ YY"]
+    await stripeIframe.getByLabel('Expiration').clear();
+    await stripeIframe.getByLabel('Expiration').type('04 / 30', { delay: TYPE_DELAY });
 
-    // // Fill [placeholder="CVC"]
-    // await stripeIframe.getByLabel('CVC').clear();
-    // await stripeIframe.getByLabel('CVC').type('242', {delay: TYPE_DELAY});
+    // Fill [placeholder="CVC"]
+    await stripeIframe.getByLabel('CVC').clear();
+    await stripeIframe.getByLabel('CVC').type('242', { delay: TYPE_DELAY });
 
-    // // Fill [placeholder="ZIP"]
-    // await stripeIframe.getByLabel('ZIP').clear();
-    // await stripeIframe.getByLabel('ZIP').type('42424', {delay: TYPE_DELAY});
-    // // Change the focus
-    // return await stripeIframe.getByLabel('ZIP').press("Tab");
+    // Fill [placeholder="ZIP"]
+    await stripeIframe.getByLabel('ZIP').clear();
+    await stripeIframe.getByLabel('ZIP').type('42424', { delay: TYPE_DELAY });
+    // Change the focus
+    return await stripeIframe.getByLabel('ZIP').press("Tab");
 }
 
 export const submitForm = async (page: Page) => {
