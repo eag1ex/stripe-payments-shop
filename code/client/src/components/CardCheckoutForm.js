@@ -52,7 +52,7 @@ const CardCheckoutForm = (props) => {
                 setMessage(error.message);
                 return
             }
-            
+            // console.log('[CardCheckoutForm][paymentIntent]', paymentIntent)
             // The payment has been processed!
             onSuccessfulConfirmation('success', checkoutResp({ ...paymentIntent }))
 
@@ -63,6 +63,7 @@ const CardCheckoutForm = (props) => {
 
     };
 
+    if (!customer) return null
 
     return (<form onSubmit={handleClick}>
         <div style={{ marginBottom: 20, marginTop: 5, }}>

@@ -43,8 +43,6 @@ const UpdateCustomer = ({
   const selected = 1;
   const appearance = {}
 
-  // TODO: Integrate Stripe
-
   //Get info to load page, User payment information, config API route in package.json "proxy"
   useEffect(() => {
     setEmail(customerEmail);
@@ -54,11 +52,6 @@ const UpdateCustomer = ({
     if (email !== "" && name !== "") {
       setProcessing(false);
     }
-    // async function setUp() {
-    //   const { key } = await serverConfig().then((res) => res.json());
-    //   setStripePromise(loadStripe(key));
-    // }
-    // setUp();
   }, []);
 
   const handleClick = async () => {
@@ -98,11 +91,9 @@ const UpdateCustomer = ({
                 />
               </div>
 
-              <Elements stripe={stripePromise.current} options={{ appearance, clientSecret: customer.clientSecret, theme: 'stripe' }}>
-
-              <CardCheckoutForm state={'update'} session={customer.metadata} clientSecret={customer.clientSecret} learnerName={customerName} learnerEmail={customerEmail} customerId={customerId} />
-
-              </Elements>
+              {stripePromise.current && (<Elements stripe={stripePromise.current} options={{ appearance, clientSecret: customer.clientSecret, theme: 'stripe' }}>
+                <CardCheckoutForm state={'update'} session={customer.metadata} clientSecret={customer.clientSecret} learnerName={customerName} learnerEmail={customerEmail} customerId={customerId} />
+              </Elements>)}
             </div>
             {error ? (
               <div id="card-errors">

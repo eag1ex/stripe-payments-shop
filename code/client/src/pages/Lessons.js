@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
 import Header from "../components/Header";
-// import {  useLocation } from 'react-router-dom';
 import RegistrationForm from "../components/RegistrationForm";
 import "../css/lessons.scss";
 import DocumentTitle from "../components/DocumentTitle";
-
+// import { createBrowserHistory } from 'history';
 const months = [
   "Jan",
   "Feb",
@@ -33,9 +32,14 @@ const formatSession = (index, id, session, time) => {
 };
 
 //Lessons main component
-const Lessons = () => {
+
+
+
+// https://stackoverflow.com/questions/1634748/how-can-i-delete-a-query-string-parameter-in-javascript
+
+
+const Lessons = (props) => {
   DocumentTitle('Lessons Courses')
-  //const { pathname, hash, key, state, search } = useLocation();
 
   const [sessions, setSessions] = useState([]); //info about available sessions
   const [selected, setSelected] = useState(-1); //index of selected session
@@ -58,7 +62,9 @@ const Lessons = () => {
   useEffect(() => {
     let items = [];
     let session = new Date();
-
+    if (sessions.length>3){
+      return
+    }  
     session.setDate(session.getDate() + 9);
     items.push(formatSession(0, "first", session, "3:00 p.m."));
 
@@ -76,8 +82,7 @@ const Lessons = () => {
       {
         //Component to process user info for registration.
       }
-      <RegistrationForm selected={selected} details={details} session={sessions[selected]} onUpdate={(status,data)=>{
-
+      <RegistrationForm history={props.history} selected={selected} details={details} session={sessions[selected]} onUpdate={(status,data)=>{
         if(status==='registration'){
           toggleItem(data.index)
         }

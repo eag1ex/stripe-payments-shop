@@ -266,24 +266,25 @@ test.describe('Using different test cards', () => {
     await expect(page.locator('text=A customer with that email address already exists. If you\'d like to update the c')).toBeVisible();
   });
 
-//   test('Should Display Card Declined Error Message when Invalid Card is used:3.25', async ({ page }) => {
 
-//     test.skip(!scheduleLessonWorking, "If success card fails, other cards won't work either")
+  test('Should Display Card Declined Error Message when Invalid Card is used:3.25', async ({ page }) => {
 
-//     const email = faker.internet.email();
+    test.skip(!scheduleLessonWorking, "If success card fails, other cards won't work either")
 
-//     // Go to http://localhost:${process.env.PORT}/lessons
-//     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
+    const email = faker.internet.email();
 
-//     await page.locator('text=Lessons Courses').click({timeout: 1000});
-//     await openRegistrationPane(page);
+    // Go to http://localhost:${process.env.PORT}/lessons
+    await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
 
-//     await lessonSignUp(page, faker.name.findName(), email, '4000 0000 0000 0002');
+    await page.locator('text=Lessons Courses').click({timeout: 1000});
+    await openRegistrationPane(page);
 
-//     // Click text=Your card has been declined.
-//     await expect(page.locator('text=Your card has been declined.')).toBeVisible();
+    await lessonSignUp(page, faker.name.findName(), email, '4000 0000 0000 0002');
 
-//   });
+    // Click text=Your card has been declined.
+    await expect(page.locator('text=Your card has been declined.')).toBeVisible();
+
+  });
 
 //   test('Should Display Card Declined Error Message when Invalid 3DS Card is used:3.26', async ({ page }) => {
 

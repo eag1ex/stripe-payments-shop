@@ -12,7 +12,7 @@ import { createBrowserHistory } from 'history';
 
 const App = () => {
   const history = createBrowserHistory();
-
+ 
   return (
     <React.StrictMode>
       <Suspense fallback="loading">
@@ -27,7 +27,7 @@ const App = () => {
           <Routes>
           <Route path="/" element={<Layout history={history} />}>
               <Route path="" element={<Home path="/" />} />
-            <Route path="lessons" element={<Lessons />} />
+              <Route path="lessons" element={<Lessons history={history} />} />
               <Route exact path="account-update/:id" element={<AccountUpdate  />} />
             </Route>
          

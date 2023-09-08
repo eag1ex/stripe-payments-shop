@@ -46,9 +46,31 @@ export const checkoutResp = (d) => {
     try {
         return {
             card: d?.payment_method?.card,
-            billing_details: d?.payment_method?.billing_details
+            billing_details: d?.payment_method?.billing_details,
+            customerId: d?.payment_method?.customer
         }
     } catch (err) {
     }
     return {}
+}
+
+/**
+* Get customer from session 
+*/
+export const customerFromSession = () => {
+        const customer = {
+            email: sessionStorage.getItem("customerEmail"),
+            name: sessionStorage.getItem("customerName"),
+            customerId: sessionStorage.getItem("customerId")
+        }
+        return customer
+}
+
+/**
+ * Set customer session
+ */
+export const setCustomerSession = ({ name, email, customerId }) => {
+    sessionStorage.setItem("customerEmail", email)
+    sessionStorage.setItem("customerName",name)
+    sessionStorage.setItem("customerId", customerId)
 }

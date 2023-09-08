@@ -38,18 +38,27 @@ exports.apiRouter = (stripe) => {
     apiRouter.post('/lessons', async (req, res) => {
         try {
             const { learnerEmail, learnerName, metadata, type } = req.body || {}
-            // {type} update existing customer or create new 
+
             console.log('[lessons][body]', req.body)
             if (!learnerEmail || !learnerName) return res.status(400).send({ error: { message: 'missing learnerEmail or learnerName' } })
 
             const meta = customerMetadata(metadata || {})
-            const exists = await customerExists(stripe, { learnerName, learnerEmail })
-            const r = exists.data?.length ? { ...exists.data[0], exist: exists.exist } : { ...(await stripe.customers.create({ email: learnerEmail, name: learnerName, metadata: meta })), exist: false }
+            const cus = await stripe.customers.search({ query: `email:"${learnerEmail}"`, expand: [] })
+            
+            if (cus.data?.length){
+                const d = cus.data[0]
+                return res.send({
+                    
+                    exist: true,
+                    name: d.name,
+                    email: d.email,
+                    customerId: d.id,
+                })
+            }
+            const r = await stripe.customers.create({ email: learnerEmail, name: learnerName, metadata: meta })
 
 
             // let setupIntent
-            let paymentIntent
-            if (!r.exist) {
 
                 // setupIntent = await stripe.setupIntents.create({
                 //     customer: r.id,
@@ -59,10 +68,10 @@ exports.apiRouter = (stripe) => {
                 //     },
                 // });
 
-                 paymentIntent = await stripe.paymentIntents.create({
+               const paymentIntent = await stripe.paymentIntents.create({
                     setup_future_usage: 'off_session',
                     // one customer only
-                     //customer: r.id,
+                     customer: r.id,
                     // payment_method_types: ['card'],
                     confirm: false,
                     receipt_email: learnerEmail,
@@ -72,7 +81,7 @@ exports.apiRouter = (stripe) => {
                     automatic_payment_methods: { enabled: true },
                 })     
       
-            }
+          
 
             console.log('[GET][lessons][customer]', r)
             console.log('[GET][lessons][paymentIntent]', paymentIntent)
@@ -98,8 +107,8 @@ exports.apiRouter = (stripe) => {
                 // setupIntent: setupIntent?.client_secret
             }
             return res.send({
-                exist: r.exist,
-                ...(!r.exist ? { secrets }:{}),
+                exist: false,
+                secrets,
                 customerId: r.id,
                 ...(r.metadata ? { metadata: r.metadata } : {}),
                 name: r.name,

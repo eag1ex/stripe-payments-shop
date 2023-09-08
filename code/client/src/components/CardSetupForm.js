@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import SignupComplete from "./SignupComplete";
 import CardCheckoutForm from './CardCheckoutForm';
-import { Routes, Route, useParams } from 'react-router-dom';
+// import { Routes, Route, useParams } from 'react-router-dom';
 
 
 
@@ -22,7 +22,7 @@ import { Routes, Route, useParams } from 'react-router-dom';
           active={paymentSucceeded}
           email={checkoutBilling.billing_details?.email}
           last4={checkoutBilling.card.last4}
-          customer_id={customer?.customerId}
+          customer_id={checkoutBilling?.customerId}
         />
       </div>
     )
@@ -58,7 +58,6 @@ import { Routes, Route, useParams } from 'react-router-dom';
                   }
                   if (status === 'setup-error') {
                     console.error('setup-error', result)
-                    
                   }
 
                 }} />

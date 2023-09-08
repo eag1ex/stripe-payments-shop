@@ -2,12 +2,12 @@ import { Elements, AddressElement } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import React, { useEffect, useRef, useState } from "react";
 import CardSetupForm from "./CardSetupForm";
-
 import { createCustomer } from '../Services/customer'
-import { Link } from "react-router-dom";
 import { serverConfig } from '../Services/config';
-import { customerObject } from '../utils'
+import { setCustomerSession, customerFromSession } from '../utils/index';
 
+
+     // history.push({}, document.title, window.location.pathname)
 // it would be best to use environment variables, but i dont see that in code.client root, i do understand you want to call it from GET /config, so in order not to rerender the object we declare it before render, as advised in your docs, @source: https://stripe.com/docs/payments/save-and-reuse?platform=web&ui=elements
 
 
@@ -36,15 +36,27 @@ const LoadStripe = (async () => {
 })()
 
 
+const BodyTest = ({ text, history }) => {
+  console.log('[BodyTest][text]', text)
+  console.log('[Lessons][props]', history.location) 
+  console.log('[Lessons][session][email]', customerFromSession()) 
+  
+  return null
+}
+
 const RegistrationForm = (props) => {
-
-
+  //const { pathname, hash, key, state, search } = useLocation()
+  const { history } = props;
+  
+ 
+  //const { pathname, hash, key, state, search } = useLocation();
 
   const { selected, details,session, onUpdate } = props;
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [learnerEmail, setLearnerEmail] = useState("");
   const [learnerName, setLearnerName] = useState("");
+  const [sameEmail,setSameEmail] = useState(false)
   const [customer, setCustomer] = useState(null);
   const stripePromise = useRef(LoadStripe);
   const appearance = {
@@ -58,25 +70,35 @@ const RegistrationForm = (props) => {
   }
   
   const handleClickForPaymentElement = async () => {
-    if (processing) return false
     if (
-      !!learnerEmail && !!learnerName && !processing&&
-      customer?.email === learnerEmail && customer?.name === learnerName) {
+       (!!learnerEmail && !!learnerName) &&
+      (customer?.email === learnerEmail || 
+        // this works with test!
+        customerFromSession().email === learnerEmail )
+      ) {
+      // customer from session!
+      setSameEmail(true)
       setError(null)
-        return false
+      return false
     }
 
-    /**
-     
-    const secrets = {
-                paymentIntent: paymentIntent?.client_secret,
-                setupIntent: setupIntent?.client_secret
-            }
-     */
+    if (processing) return 
+
 
     setError(null);
     setProcessing(true)
+    setCustomer(null)
+
     createCustomer({ learnerEmail, learnerName, metadata: session }).then(n=>{
+   
+      if(n.exist){
+        setProcessing(false)
+        setCustomer({  customerId: n.customerId, email: n.email, name: n.name,  exist: n.exist })
+        return
+      }
+
+      setCustomerSession({ name: n.name, email: n.email, customerId: n.customerId })
+
       console.log('[RegistrationForm][createCustomer]', n)
       setProcessing(false)
       setCustomer({ secrets:n.secrets, customerId: n.customerId, email: n.email, name: n.name, card:n.card, exist: n.exist, metadata: n.metadata })
@@ -92,14 +114,22 @@ const RegistrationForm = (props) => {
     })
   };
 
-  // console.log('[RegistrationForm][session]', session)
-  // console.log('[RegistrationForm][customer]', customer)
-
   let body = null;
-  if (selected === -1) return body;
-  if (customer?.secrets?.paymentIntent && customer?.exist===false ) {
+  // console.log('selected/customer A selected', selected)
+  // console.log('selected/customer B exists', customer?.exist)
+  // console.log('selected/customer C sameEmail', sameEmail)
+  // console.log('selected/customer D learnerEmail', learnerEmail, customer?.email)
+ 
+  if (selected === -1) {
+
+    return (<>
+      {body}
+    </>)
+  }
+  if (customer?.secrets?.paymentIntent && customer?.exist === false && selected !== -1 ) {
 
     body = (
+      <>
       <Elements stripe={stripePromise.current} options={{ appearance, clientSecret: customer?.secrets?.paymentIntent,  loader:'auto'}}>
       
         <CardSetupForm
@@ -111,11 +141,12 @@ const RegistrationForm = (props) => {
           //onSuccessfulConfirmation('success', result.setupIntent)
         />
       
-      </Elements>
+      </Elements></>
     )
   } else {
     body = ( 
     <div className={`lesson-desc`}>
+        <BodyTest text="else" history={history} />  
       <h3>Registration details</h3>
       <div id="summary-table" className="lesson-info">
         {details}
@@ -153,36 +184,47 @@ const RegistrationForm = (props) => {
           </div>
             <button
               id="checkout-btn"
-              disabled={!learnerName || !learnerEmail || processing}
+              disabled={processing}
               onClick={handleClickForPaymentElement}
             >{processing ? (<div className="spinner" id="spinner"></div>) : (
               <span id="button-text">Save Checkout</span>)}
             </button>
 
-
         </div>
-          {customer?.exist && (
+          {(customer?.exist || sameEmail || customerFromSession().email) && (
+          
+          <>
+              <BodyTest text="customer?.exist || sameEmail" history={history} />
           <div
             className="sr-field-error"
             id="customer-exists-error"
             role="alert"
           >
-            A customer with that email address already exists. If you'd
+           A customer with that email address already exists. If you'd
             like to update the card on file, please visit{" "}
-
-              <Link
+            {/* <Link
                 state={{ customer: customerObject(customer), card: customer?.card, metadata: customer.metadata }}
                 id="account-link"
                 to={`../account-update/${customer?.customerId}`}
               >
                 <b>account update</b>
-              </Link>
+              </Link> */}
+              <span id="account_link">
+                <b>
+                  <a
+                      href={`localhost:3000/account-update/${customerFromSession().customerId}`}
+                  >
+                    account update
+                  </a>
+                </b>
+              </span>
+
             {"\n"}
             <span id="error_message_customer_email">
                 {customer?.email}
             </span>
             .
-          </div>
+            </div></>
         )}
       </div>
         {error && (customer === null || !customer) && (
