@@ -36,13 +36,13 @@ const LoadStripe = (async () => {
 })()
 
 
-const BodyTest = ({ text, history }) => {
-  console.log('[BodyTest][text]', text)
-  console.log('[Lessons][props]', history.location) 
-  console.log('[Lessons][session][email]', customerFromSession()) 
+// const BodyTest = ({ text, history }) => {
+//   console.log('[BodyTest][text]', text)
+//   console.log('[Lessons][props]', history.location) 
+//   console.log('[Lessons][session][email]', customerFromSession()) 
   
-  return null
-}
+//   return null
+// }
 
 const RegistrationForm = (props) => {
   //const { pathname, hash, key, state, search } = useLocation()
@@ -146,7 +146,6 @@ const RegistrationForm = (props) => {
   } else {
     body = ( 
     <div className={`lesson-desc`}>
-        <BodyTest text="else" history={history} />  
       <h3>Registration details</h3>
       <div id="summary-table" className="lesson-info">
         {details}
@@ -194,7 +193,6 @@ const RegistrationForm = (props) => {
           {(customer?.exist || sameEmail || customerFromSession().email) && (
           
           <>
-              <BodyTest text="customer?.exist || sameEmail" history={history} />
           <div
             className="sr-field-error"
             id="customer-exists-error"
