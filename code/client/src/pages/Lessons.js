@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import Header from "../components/Header";
 import RegistrationForm from "../components/RegistrationForm";
 import "../css/lessons.scss";
-
+import DocumentTitle from "../components/DocumentTitle";
+// import { createBrowserHistory } from 'history';
 const months = [
   "Jan",
   "Feb",
@@ -26,11 +27,20 @@ const formatSession = (index, id, session, time) => {
   }
   date = `${date} ${months[session.getMonth()]}`;
   let title = `${date} ${time}`;
-  return { index, id, title, date, time, selected: "" };
+  let type = `${id}_lesson`;
+  return { index, id, title, date, time, selected: "", type };
 };
 
 //Lessons main component
-const Lessons = () => {
+
+
+
+// https://stackoverflow.com/questions/1634748/how-can-i-delete-a-query-string-parameter-in-javascript
+
+
+const Lessons = (props) => {
+  DocumentTitle('Lessons Courses')
+
   const [sessions, setSessions] = useState([]); //info about available sessions
   const [selected, setSelected] = useState(-1); //index of selected session
   const [details, setDetails] = useState(""); //details about selected session
@@ -43,7 +53,7 @@ const Lessons = () => {
     }
     items[index].selected = "selected";
     setSelected(index);
-    setSessions(items);
+    setSessions(...[items]);
     setDetails(
       `You have requested a lesson for ${items[index].title} \n Please complete this form to reserve your lesson.`
     );
@@ -52,7 +62,9 @@ const Lessons = () => {
   useEffect(() => {
     let items = [];
     let session = new Date();
-
+    if (sessions.length>3){
+      return
+    }  
     session.setDate(session.getDate() + 9);
     items.push(formatSession(0, "first", session, "3:00 p.m."));
 
@@ -70,7 +82,11 @@ const Lessons = () => {
       {
         //Component to process user info for registration.
       }
-      <RegistrationForm selected={selected} details={details} />
+      <RegistrationForm history={props.history} selected={selected} details={details} session={sessions[selected]} onUpdate={(status,data)=>{
+        if(status==='registration'){
+          toggleItem(data.index)
+        }
+      }} />
       <div className="lesson-title" id="title">
         <h2>Guitar lessons</h2>
       </div>

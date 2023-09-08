@@ -1,3 +1,49 @@
+
+@mixin extraStyles(){
+  .card, .card-address {
+  background-color: white;
+  padding: 0px 10px 10px;
+  border-radius: 5px;
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0px 4px 5.5px 0px rgba(0, 0, 0, 0.07);
+}
+.pay-button{
+  padding: 0.7rem 2rem;
+  width: 100%;
+  margin: 1rem 0;
+  color: white;
+  font-weight: bold;
+  font-size: medium;
+  background-color: #556cd6;
+  border: 0;
+  border-radius: 5px;
+  box-shadow: 0px 4px 5.5px 0px rgba(0, 0, 0, 0.07);
+  transition: box-shadow 500ms;
+  cursor: pointer;
+}
+.pay-button:disabled{
+  background-color: #afafaf;
+  box-shadow: none;
+  cursor: default;
+}
+.pay-button:disabled:hover{
+  box-shadow: none;
+}
+.pay-button:hover{
+  box-shadow: 2px 5px 15px 2px rgba(0, 0, 0, 0.2);
+}
+
+.smaller{
+  font-size: smaller!important;
+}
+}
+
+body{
+    @include extraStyles();
+}
+
+
 .main-global {
   $body-font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   /* Variables */
@@ -15,6 +61,8 @@
     --logo-image: url("https://storage.googleapis.com/stripe-sample-images/KAVHOLM.svg");
     --form-width: 343px;
   }
+  /* Additional styles */
+
 
   /* Base */
   * {

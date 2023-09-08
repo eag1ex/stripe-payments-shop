@@ -1,30 +1,28 @@
-import {
-  PaymentElement, useElements, useStripe
-} from "@stripe/react-stripe-js";
 import React, { useState } from "react";
 import SignupComplete from "./SignupComplete";
-  
+import CardCheckoutForm from './CardCheckoutForm';
+// import { Routes, Route, useParams } from 'react-router-dom';
+
+
+
   const CardSetupForm = (props) => {
-    const { selected, mode, details, customerId, learnerEmail, learnerName, onSuccessfulConfirmation } =
+    
+    const { session, selected, mode, details,customer, onSuccessfulConfirmation } =
       props;
+      
     const [paymentSucceeded, setPaymentSucceeded] = useState(false);
     const [error, setError] = useState(null);
-    const [processing, setProcessing] = useState(false);
-    const [last4, setLast4] = useState("");
-    // TODO: Integrate Stripe
-  
-    const handleClick = async (e) => {
-      // TODO: Integrate Stripe
-    };
-  
+    const [checkoutBilling, setCheckoutBilling] = useState(null);
+
+
     if (selected === -1) return null;
-    if (paymentSucceeded) return (
+    if (paymentSucceeded && !!checkoutBilling) return (
       <div className={`lesson-form`}>
         <SignupComplete
           active={paymentSucceeded}
-          email={learnerEmail}
-          last4={last4}
-          customer_id={customerId}
+          email={checkoutBilling.billing_details?.email}
+          last4={checkoutBilling.card.last4}
+          customer_id={checkoutBilling?.customerId}
         />
       </div>
     )
@@ -43,22 +41,36 @@ import SignupComplete from "./SignupComplete";
               <div className="lesson-grid">
                 <div className="lesson-inputs">
                   <div className="lesson-input-box first">
-                    <span>{learnerName} ({learnerEmail})</span>
+                <span>{customer?.name} ({customer?.email})</span>
                   </div>
                   <div className="lesson-payment-element">
-                    {
-                      // TODO: Integrate Stripe
-                    }
+                <CardCheckoutForm state={'setup'} customer={customer} session={session} onSuccessfulConfirmation={(status, result) => {
+
+                  if (status === 'success') {
+                    setPaymentSucceeded(true)
+                    setCheckoutBilling(result)
+                    console.log('success', result)
+                  }
+
+                  if (status === 'pm-error') {
+                    setError()
+                    console.error('pm-error', result)
+                  }
+                  if (status === 'setup-error') {
+                    console.error('setup-error', result)
+                  }
+
+                }} />
                   </div>
                 </div>
               </div>
-              {error && (
+              {/* {error && (
                 <div className="sr-field-error" id="card-errors" role="alert">
                   <div className="card-error" role="alert">
                     {error}
                   </div>
                 </div>
-              )}
+              )} */}
             </div>
         </div>
     )

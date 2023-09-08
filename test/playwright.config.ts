@@ -8,11 +8,11 @@ import { devices } from '@playwright/test';
 import dotenv from 'dotenv';
 
 // Get variables from app's server
-dotenv.config({path: `../code/server/.env`});
+dotenv.config({ path: `../code/server/.env` });
 
-const reporters:ReporterDescription[] = [
+const reporters: ReporterDescription[] = [
   ['list'],
-  ['json', {  outputFile: 'results/test-results.json' }] 
+  ['json', { outputFile: 'results/test-results.json' }]
 ];
 
 if (process.env.CI) {
@@ -25,13 +25,13 @@ type LocationData = {
   timezoneId: string,
 }
 
-const locations:Record<string, LocationData> = {
+const locations: Record<string, LocationData> = {
   Berlin: {
     locale: 'de-DE',
     geolocation: { latitude: 52.5245, longitude: 13.4100 },
     timezoneId: 'Europe/Berlin',
   },
-  NewYork : {
+  NewYork: {
     locale: 'en-US',
     geolocation: { latitude: 40.7128, longitude: -74.0060 },
     timezoneId: 'America/New_York'
@@ -110,3 +110,5 @@ const config: PlaywrightTestConfig = {
 };
 
 export default config;
+
+

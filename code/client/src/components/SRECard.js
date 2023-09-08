@@ -1,6 +1,5 @@
 import React from "react";
-import { Link } from "@reach/router";
-
+import { Link } from "react-router-dom";
 //Home item card
 const SRECard = (props) => {
   const { id, title, desc, img, route } = props;

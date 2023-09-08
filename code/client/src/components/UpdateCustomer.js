@@ -1,10 +1,30 @@
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import CardSetupForm from "./CardSetupForm";
+import CardCheckoutForm from './CardCheckoutForm';
+import { serverConfig } from '../Services/config';
+
+
+// customer = { data.customer }
+// customerName = { data.customer.name }
+// customerEmail = { data.customer.email }
+
+
+const LoadStripe = (async () => {
+  let stripePromise
+  try {
+    const STRIPE_PUBLISHABLE_KEY = (await serverConfig()).key
+    stripePromise = await loadStripe(STRIPE_PUBLISHABLE_KEY, { apiVersion: '2022-11-15' });
+  } catch (err) {
+
+  }
+  return stripePromise
+})()
 
 const UpdateCustomer = ({
-  customerId,
+  customer,
+  id: customerId,
   customerName,
   customerEmail,
   onSuccessfulConfirmation,
@@ -16,12 +36,12 @@ const UpdateCustomer = ({
   const [oldName, setOldName] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [stripePromise, setStripePromise] = useState(null);
+
   const [stripeOptions, setStripeOptions] = useState(null);
   const [loadPaymentElement, setLoadPaymentElement] = useState(false);
+  const stripePromise = useRef(LoadStripe);
   const selected = 1;
-
-  // TODO: Integrate Stripe
+  const appearance = {}
 
   //Get info to load page, User payment information, config API route in package.json "proxy"
   useEffect(() => {
@@ -32,17 +52,13 @@ const UpdateCustomer = ({
     if (email !== "" && name !== "") {
       setProcessing(false);
     }
-    async function setUp() {
-      const { key } = await fetch("/config").then((res) => res.json());
-      setStripePromise(loadStripe(key));
-    }
-    setUp();
   }, []);
 
   const handleClick = async () => {
     // TODO: Integrate Stripe
   };
 
+  console.log('stripePromise', stripePromise.current)
   return (
     <div className="lesson-form">
       {!succeeded ? (
@@ -74,6 +90,10 @@ const UpdateCustomer = ({
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
+
+              {stripePromise.current && (<Elements stripe={stripePromise.current} options={{ appearance, clientSecret: customer.clientSecret, theme: 'stripe' }}>
+                <CardCheckoutForm state={'update'} session={customer.metadata} clientSecret={customer.clientSecret} learnerName={customerName} learnerEmail={customerEmail} customerId={customerId} />
+              </Elements>)}
             </div>
             {error ? (
               <div id="card-errors">

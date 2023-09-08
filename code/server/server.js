@@ -1,18 +1,140 @@
 /* eslint-disable no-console */
-const express = require('express');
-
-const app = express();
-const { resolve } = require('path');
-// Replace if using a different env file or config
 require('dotenv').config({ path: './.env' });
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+// do not remove
+require('./_preset');
+
+
+const express = require('express');
+const app = express();
+const { resolve, join } = require('path');
+// Replace if using a different env file or config
+
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
-
-const allitems = {};
+const morgan = require('morgan')
+const bodyParser = require('body-parser')
+const ejs = require('ejs')
 const fs = require('fs');
+const { apiVersion, clientDir } = require('./config');
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY, { apiVersion });
+// const { getCustomerPaymentMethodType }  = require('./services')
 
-app.use(express.static(process.env.STATIC_DIR));
+const {apiRouter} = require('./api')
+const allitems = {};
+const apiBase = `https://api.stripe.com/v1`
+const { customerMetadata, customerExists, findCustomerSetupIntent } = require('./utils');
+
+
+app.set('trust proxy', 1) // trust first proxy
+app.use(morgan('dev'))
+app.engine('html', ejs.__express) 
+app.set('view engine', 'html')
+app.use(bodyParser.urlencoded({ extended: false }))
+
+
+app.use((req, res, next) => {
+  try{
+    // fixed manifest issue
+    if (/manifest.json/i.test(req.path)) {
+      res.header("Content-Type", 'application/json');
+      const manifest = JSON.parse(fs.readFileSync(join(__dirname, process.env.STATIC_DIR, clientDir,'manifest.json'), 'utf8'));
+      return res.status(200).json(manifest);
+
+    }
+  }catch(err){
+    return res.status(200).json({});
+  }
+  return next();
+});
+
+app.use(express.static(join(process.env.STATIC_DIR, clientDir)));
+
+
+// setupIntents =  stripe.setupIntents.list({
+//   customer: 'cus_OZinKz2wnwOFZT'
+// }).then(n=>{
+//   console.log('setupIntents',JSON.stringify(n, false,1))
+// })
+
+// stripe.customers.search({
+//   query: 'name:\'mike\' AND email:\'mike@email.com\'', expand: ['data.payment_method']
+// }).then(n=>{
+//   console.log('cus1',JSON.stringify(n.data))
+// })
+   
+// stripe.customers.retrieve('cus_OZcfJhKEMg5dQp', {
+//   expand: [] }).then(n => {
+//   console.log('cus2', n)
+// })
+
+// stripe.customers.listPaymentMethods(
+//   'cus_OZdUr5QkFqWAkm',
+//   { type: 'card', expand: ['data.customer'] }
+// ).then(n=>{
+//   console.log('listPaymentMethods',JSON.stringify(n.data[0], false,1))
+// }) // returns a list of PaymentMethods data[0] >{}
+
+// const paymentIntents = stripe.paymentIntents.list({
+//   //customer:'cus_OZgHi3Nhyk3arf',
+//   //limit: 3,
+//   expand: ['data.customer']
+// }).then(n=>{
+//   console.log('paymentIntents!!',JSON.stringify(n, false,1))
+// })
+
+// const paymentIntentSearch = stripe.paymentIntents.search({
+//   query: 'id:\'pm_1NmWvmDo67vHA3BFBUTXaRs0\''
+// }).then(n=>{
+//   console.log('paymentIntentSearch!!',JSON.stringify(n, false,1))
+// })
+
+// const paymentIntentRetrieve = stripe.paymentIntents.retrieve(
+//   'pm_1NmWvmDo67vHA3BFBUTXaRs0',
+// ).then(n=>{
+//   console.log('paymentIntentRetrieve!!', JSON.stringify(n, false, 1))
+// })
+
+//
+// "pm_1NmWvmDo67vHA3BFBUTXaRs0"
+
+
+// stripe.customers.search({ query: `name:"mike12345" AND email:"mike12345@email.com" AND metadata['type']:"second_lesson"`, expand: [] }).then(n => {
+//   console.log('customers.search12', JSON.stringify(n, false, 1))
+// })
+
+
+
+
+
+// stripe.customers.retrieve('cus_Oa4fBHkgqlcREw', {
+//   expand: ['invoice_settings.default_payment_method']
+// })
+
+// stripe.paymentIntents.list({ customer: 'cus_Oa4fBHkgqlcREw',expand:['data.customer'] }).then(n => {
+//   console.log('cus2', n)
+// })
+
+// stripe.paymentMethods.retrieve('pm_1NmvLTDo67vHA3BFqXlDbyFt', { expand:['customer'] }).then((n)=>{
+//   console.log('cus2', n)
+// })
+
+
+// paymentIntent = stripe.paymentIntents.create({
+//   setup_future_usage: 'off_session',
+
+//   //    payment_method_options: {
+//   //        card: {}
+//   //    },
+//   // one customer only
+//   //customer: r.id,
+//   //payment_method_types: ['card'],
+//   confirm: false,
+//   metadata: {},
+//   amount: 100,
+//   currency: 'thb',
+//   automatic_payment_methods: { enabled: true },
+// })
 
 app.use(
   express.json(
@@ -27,27 +149,68 @@ app.use(
     },
   ),
 );
+
 app.use(cors({ origin: true }));
 
 // const asyncMiddleware = fn => (req, res, next) => {
 //   Promise.resolve(fn(req, res, next)).catch(next);
 // };
 
-app.post("/webhook", async (req, res) => {
-  // TODO: Integrate Stripe
+
+
+app.post('/webhook', async (req, res) => {
+  let data, eventType;
+
+  // Check if webhook signing is configured.
+  if (process.env.STRIPE_WEBHOOK_SECRET) {
+    // Retrieve the event by verifying the signature using the raw body and secret.
+    let event;
+    let signature = req.headers['stripe-signature'];
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.rawBody,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.log(`⚠️  Webhook signature verification failed.`);
+      return res.sendStatus(400);
+    }
+    data = event.data;
+    eventType = event.type;
+  } else {
+    // Webhook signing is recommended, but if the secret is not configured in `config.js`,
+    // we can retrieve the event data directly from the request body.
+    data = req.body.data;
+    eventType = req.body.type;
+  }
+
+  if (eventType === 'payment_intent.succeeded') {
+    // Funds have been captured
+    // Fulfill any orders, e-mail receipts, etc
+    // To cancel the payment after capture you will need to issue a Refund (https://stripe.com/docs/api/refunds)
+    console.log('💰 Payment captured!');
+  } else if (eventType === 'payment_intent.payment_failed') {
+    console.log('❌ Payment failed.');
+  }
+  res.sendStatus(200);
 });
 
+
+
+
+
 // Routes
-app.get('/', (req, res) => {
-  try {
-    const path = resolve(`${process.env.STATIC_DIR}/index.html`);
-    if (!fs.existsSync(path)) throw Error();
-    res.sendFile(path);
-  } catch (error) {
-    const path = resolve('./public/static-file-error.html');
-    res.sendFile(path);
-  }
-});
+// app.get('/', (req, res) => {
+//   try {
+//     const path = resolve(`${process.env.STATIC_DIR}/index.html`);
+//     if (!fs.existsSync(path)) throw Error();
+//     res.sendFile(path);
+//   } catch (error) {
+//     const path = resolve('./public/static-file-error.html');
+//     res.sendFile(path);
+//   }
+// });
 
 // Fetch the Stripe publishable key
 //
@@ -58,232 +221,23 @@ app.get('/', (req, res) => {
 //   {
 //        key: <STRIPE_PUBLISHABLE_KEY>
 //   }
-app.get("/config", (req, res) => {
-  // TODO: Integrate Stripe
-});
-
-// Milestone 1: Signing up
-// Shows the lesson sign up page.
-app.get('/lessons', (req, res) => {
-  try {
-    const path = resolve(`${process.env.STATIC_DIR}/lessons.html`);
-    if (!fs.existsSync(path)) throw Error();
-    res.sendFile(path);
-  } catch (error) {
-    const path = resolve('./public/static-file-error.html');
-    res.sendFile(path);
-  }
-});
-
-// TODO: Integrate Stripe
-
-// Milestone 2: '/schedule-lesson'
-// Authorize a payment for a lesson
-//
-// Parameters:
-// customer_id: id of the customer
-// amount: amount of the lesson in cents
-// description: a description of this lesson
-//
-// Example call:
-// curl -X POST http://localhost:4242/schedule-lesson \
-//  -d customer_id=cus_GlY8vzEaWTFmps \
-//  -d amount=4500 \
-//  -d description='Lesson on Feb 25th'
-//
-// Returns: a JSON response of one of the following forms:
-// For a successful payment, return the Payment Intent:
-//   {
-//        payment: <payment_intent>
-//    }
-//
-// For errors:
-//  {
-//    error:
-//       code: the code returned from the Stripe error if there was one
-//       message: the message returned from the Stripe error. if no payment method was
-//         found for that customer return an msg 'no payment methods found for <customer_id>'
-//    payment_intent_id: if a payment intent was created but not successfully authorized
-// }
-app.post("/schedule-lesson", async (req, res) => {
-  // TODO: Integrate Stripe
-});
 
 
-// Milestone 2: '/complete-lesson-payment'
-// Capture a payment for a lesson.
-//
-// Parameters:
-// amount: (optional) amount to capture if different than the original amount authorized
-//
-// Example call:
-// curl -X POST http://localhost:4242/complete_lesson_payment \
-//  -d payment_intent_id=pi_XXX \
-//  -d amount=4500
-//
-// Returns: a JSON response of one of the following forms:
-//
-// For a successful payment, return the payment intent:
-//   {
-//        payment: <payment_intent>
-//    }
-//
-// for errors:
-//  {
-//    error:
-//       code: the code returned from the error
-//       message: the message returned from the error from Stripe
-// }
-//
-app.post("/complete-lesson-payment", async (req, res) => {
-  // TODO: Integrate Stripe
-});
+// load the api app
+app.use('/api', apiRouter(stripe))
 
-// Milestone 2: '/refund-lesson'
-// Refunds a lesson payment.  Refund the payment from the customer (or cancel the auth
-// if a payment hasn't occurred).
-// Sets the refund reason to 'requested_by_customer'
-//
-// Parameters:
-// payment_intent_id: the payment intent to refund
-// amount: (optional) amount to refund if different than the original payment
-//
-// Example call:
-// curl -X POST http://localhost:4242/refund-lesson \
-//   -d payment_intent_id=pi_XXX \
-//   -d amount=2500
-//
-// Returns
-// If the refund is successfully created returns a JSON response of the format:
-//
-// {
-//   refund: refund.id
-// }
-//
-// If there was an error:
-//  {
-//    error: {
-//        code: e.error.code,
-//        message: e.error.message
-//      }
-//  }
-app.post("/refund-lesson", async (req, res) => {
-  // TODO: Integrate Stripe
-});
+// catch all other routes
+// app.all('*', function (req, res) {
+//   res.status(400).json({ message:'route not found', error: true })
+// })
 
-// Milestone 3: Managing account info
-// Displays the account update page for a given customer
-app.get("/account-update/:customer_id", async (req, res) => {
-  try {
-    const path = resolve(`${process.env.STATIC_DIR}/account-update.html`);
-    if (!fs.existsSync(path)) throw Error();
-    res.sendFile(path);
-  } catch (error) {
-    const path = resolve('./public/static-file-error.html');
-    res.sendFile(path);
-  }
-});
+//Serving React
+app.get('*', (req, res) => {
 
-app.get("/payment-method/:customer_id", async (req, res) => {
-  // TODO: Retrieve the customer's payment method for the client
-});
-
-
-app.post("/update-payment-details/:customer_id", async (req, res) => {
-  // TODO: Update the customer's payment details
-});
-
-// Handle account updates
-app.post("/account-update", async (req, res) => {
-  // TODO: Handle updates to any of the customer's account details
-});
-
-// Milestone 3: '/delete-account'
-// Deletes a customer object if there are no uncaptured payment intents for them.
-//
-// Parameters:
-//   customer_id: the id of the customer to delete
-//
-// Example request
-//   curl -X POST http://localhost:4242/delete-account/:customer_id \
-//
-// Returns 1 of 3 responses:
-// If the customer had no uncaptured charges and was successfully deleted returns the response:
-//   {
-//        deleted: true
-//   }
-//
-// If the customer had uncaptured payment intents, return a list of the payment intent ids:
-//   {
-//     uncaptured_payments: ids of any uncaptured payment intents
-//   }
-//
-// If there was an error:
-//  {
-//    error: {
-//        code: e.error.code,
-//        message: e.error.message
-//      }
-//  }
-//
-app.post("/delete-account/:customer_id", async (req, res) => {
-  // TODO: Integrate Stripe
-});
-
-
-// Milestone 4: '/calculate-lesson-total'
-// Returns the total amounts for payments for lessons, ignoring payments
-// for videos and concert tickets, ranging over the last 36 hours.
-//
-// Example call: curl -X GET http://localhost:4242/calculate-lesson-total
-//
-// Returns a JSON response of the format:
-// {
-//      payment_total: Total before fees and refunds (including disputes), and excluding payments
-//         that haven't yet been captured.
-//      fee_total: Total amount in fees that the store has paid to Stripe
-//      net_total: Total amount the store has collected from payments, minus their fees.
-// }
-//
-app.get("/calculate-lesson-total", async (req, res) => {
-  // TODO: Integrate Stripe
-});
-
-
-// Milestone 4: '/find-customers-with-failed-payments'
-// Returns any customer who meets the following conditions:
-// The last attempt to make a payment for that customer failed.
-// The payment method associated with that customer is the same payment method used
-// for the failed payment, in other words, the customer has not yet supplied a new payment method.
-//
-// Example request: curl -X GET http://localhost:4242/find-customers-with-failed-payments
-//
-// Returns a JSON response with information about each customer identified and
-// their associated last payment
-// attempt and, info about the payment method on file.
-// [
-//   {
-//     customer: {
-//       id: customer.id,
-//       email: customer.email,
-//       name: customer.name,
-//     },
-//     payment_intent: {
-//       created: created timestamp for the payment intent
-//       description: description from the payment intent
-//       status: the status of the payment intent
-//       error: the error returned from the payment attempt
-//     },
-//     payment_method: {
-//       last4: last four of the card stored on the customer
-//       brand: brand of the card stored on the customer
-//     }
-//   },
-//   {},
-//   {},
-// ]
-app.get("/find-customers-with-failed-payments", async (req, res) => {
-  // TODO: Integrate Stripe
+  res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+  res.header('Expires', '-1');
+  res.header('Pragma', 'no-cache');
+  res.sendFile(join(__dirname, process.env.STATIC_DIR, clientDir, 'index.html'));
 });
 
 function errorHandler(err, req, res, next) {
