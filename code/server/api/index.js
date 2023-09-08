@@ -72,13 +72,13 @@ exports.apiRouter = (stripe) => {
                     setup_future_usage: 'off_session',
                     // one customer only
                      customer: r.id,
-                    // payment_method_types: ['card'],
+                    payment_method_types: ['card'],
                     confirm: false,
                     receipt_email: learnerEmail,
                     metadata: {},
                     amount: 1000,
                     currency: 'thb',
-                    automatic_payment_methods: { enabled: true },
+                   // automatic_payment_methods: { enabled: true },
                 })     
       
           
