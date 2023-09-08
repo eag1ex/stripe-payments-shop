@@ -238,6 +238,7 @@ test.describe('Using different test cards', () => {
 
   // });
 
+  // PASS
   test('Should not allow Customer to use same Email Twice for Lesson Registration:3.24', async ({ page }) => {
 
     test.skip(!scheduleLessonWorking, "If success card fails, other cards won't work either")
@@ -262,8 +263,7 @@ test.describe('Using different test cards', () => {
     await fillPersonalDetails(page, faker.name.findName(), email);
     // click checkout
     await page.locator('#checkout-btn').click({timeout:1000});
-    console.log('innerHTML??',await page.innerHTML('#customer-exists-error'))
-    // await expect(page.locator('text=A customer with that email address already exists. If you\'d like to update the c')).toBeVisible();
+    await expect(page.locator('text=A customer with that email address already exists. If you\'d like to update the c')).toBeVisible();
   });
 
 //   test('Should Display Card Declined Error Message when Invalid Card is used:3.25', async ({ page }) => {
