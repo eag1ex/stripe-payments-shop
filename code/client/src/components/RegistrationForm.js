@@ -183,7 +183,7 @@ const RegistrationForm = (props) => {
           </div>
             <button
               id="checkout-btn"
-              disabled={processing}
+              disabled={processing || !learnerEmail || !learnerName}
               onClick={handleClickForPaymentElement}
             >{processing ? (<div className="spinner" id="spinner"></div>) : (
               <span id="button-text">Save Checkout</span>)}

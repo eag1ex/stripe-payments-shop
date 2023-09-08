@@ -8,8 +8,8 @@
   "license": "ISC",
   "devDependencies": {
     "@faker-js/faker": "^6.0.0-alpha.3",
-    "@playwright/test": "^1.37.1",
-    "@types/node": "^18.17.14"
+    "@playwright/test": "^1.30.0",
+    "@types/node": "^18.11.2"
   },
   "dependencies": {
     "dotenv": "^16.0.3"

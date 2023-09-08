@@ -15,18 +15,18 @@ test.describe('Lesson signup form', () => {
   test('Should load Stripe Elements:3.7', async ({ page }) => {
 
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
-  
+
     // Click text=Lessons Courses
-    await page.locator('text=Lessons Courses').click({timeout: 1000});
+    await page.locator('text=Lessons Courses').click({ timeout: 1000 });
     await checkTitle(page);
     await openRegistrationPane(page);
-  
+
     // Stripe JS should exist
     await expect(page.frame('iframe[src*="https://js.stripe.com/"]')).toBeDefined();
 
     await fillPersonalDetails(page, faker.name.findName(), faker.internet.email());
 
-    await page.locator('#checkout-btn').click({timeout:1000});
+    await page.locator('#checkout-btn').click({ timeout: 1000 });
 
     // PaymentElement should be visible
     await page.frameLocator('iframe[name*="__privateStripeFrame"]').first().getByLabel('Card number').click();
@@ -34,23 +34,23 @@ test.describe('Lesson signup form', () => {
   });
 
   test('Should allow user to change Lesson Time after Elements is shown:3.9', async ({ page }) => {
-  
+
     const currDate = new Date();
     currDate.setDate(currDate.getDate() + 9);
 
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
-  
+
     // Click text=Lessons Courses
-    await page.locator('text=Lessons Courses').click({timeout: 1000});
+    await page.locator('text=Lessons Courses').click({ timeout: 1000 });
     await checkTitle(page);
     await openRegistrationPane(page);
-  
+
     // Stripe JS should exist
     await expect(page.frame('iframe[src*="https://js.stripe.com/"]')).toBeDefined();
 
     await fillPersonalDetails(page, faker.name.findName(), faker.internet.email());
 
-    await page.locator('#checkout-btn').click({timeout:1000});
+    await page.locator('#checkout-btn').click({ timeout: 1000 });
 
     // PaymentElement should be visible
     await page.frameLocator('iframe[name*="__privateStripeFrame"]').first().getByLabel('Card number').click();
@@ -59,10 +59,10 @@ test.describe('Lesson signup form', () => {
 
     // Click #second
     await page.locator('#second').click();
-  
+
     const secondSummaryTable = await page.locator('#summary-table').textContent();
     await expect(secondSummaryTable).toContain(makeDateString(currDate));
-  
+
   });
 
 
@@ -72,13 +72,13 @@ test.describe('Lesson signup form', () => {
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
 
     // Click text=Lessons Courses
-    await page.locator('text=Lessons Courses').click({timeout: 1000});
+    await page.locator('text=Lessons Courses').click({ timeout: 1000 });
     await checkTitle(page);
     await openRegistrationPane(page);
-  
+
     // Stripe JS should exist
     await expect(page.frame('iframe[src*="https://js.stripe.com/"]')).toBeDefined();
-    
+
   });
 
   test('Should have Email and Name as Mandatory Fields:3.11', async ({ page }) => {
@@ -87,15 +87,15 @@ test.describe('Lesson signup form', () => {
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
 
     // Click text=Lessons Courses
-    await page.locator('text=Lessons Courses').click({timeout: 1000});
+    await page.locator('text=Lessons Courses').click({ timeout: 1000 });
     await checkTitle(page);
     await openRegistrationPane(page);
-  
+
     // Make sure checkout button is disabled
     await expect(page.locator('#checkout-btn')).toBeDisabled();
 
     // Fill [placeholder="Name"]
-    await page.locator('[placeholder="Name"]').type(faker.name.findName(), {delay: TYPE_DELAY});
+    await page.locator('[placeholder="Name"]').type(faker.name.findName(), { delay: TYPE_DELAY });
 
     // Press Tab
     await page.locator('[placeholder="Name"]').press('Tab');
@@ -104,7 +104,7 @@ test.describe('Lesson signup form', () => {
     await expect(page.locator('#checkout-btn')).toBeDisabled();
 
     // Fill [placeholder="Email"]
-    await page.locator('[placeholder="Email"]').type(faker.internet.email(), {delay: TYPE_DELAY});
+    await page.locator('[placeholder="Email"]').type(faker.internet.email(), { delay: TYPE_DELAY });
 
     // Press Tab
     await page.locator('[placeholder="Email"]').press("Tab");
@@ -113,7 +113,7 @@ test.describe('Lesson signup form', () => {
     await expect(page.locator('#checkout-btn')).toBeEnabled();
 
     //click checkout
-    await page.locator('#checkout-btn').click({timeout:1000});
+    await page.locator('#checkout-btn').click({ timeout: 1000 });
 
     // PaymentElement should be visible
     await page.frameLocator('iframe[name*="__privateStripeFrame"]').first().getByLabel('Card number').click();
@@ -155,7 +155,7 @@ test.describe('Using different test cards', () => {
 
     // Go to http://localhost:${process.env.PORT}/lessons
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
-    await page.locator('text=Lessons Courses').click({timeout: 1000});
+    await page.locator('text=Lessons Courses').click({ timeout: 1000 });
 
     await openRegistrationPane(page);
 
@@ -171,7 +171,7 @@ test.describe('Using different test cards', () => {
 
     // Go to http://localhost:${process.env.PORT}/lessons
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
-    await page.locator('text=Lessons Courses').click({timeout: 1000});
+    await page.locator('text=Lessons Courses').click({ timeout: 1000 });
     await openRegistrationPane(page);
     await lessonSignUp(page, faker.name.findName(), faker.internet.email(), VALID_CARD);
 
@@ -188,7 +188,7 @@ test.describe('Using different test cards', () => {
     // Go to http://localhost:${process.env.PORT}/lessons
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
 
-    await page.locator('text=Lessons Courses').click({timeout: 1000});
+    await page.locator('text=Lessons Courses').click({ timeout: 1000 });
     await openRegistrationPane(page);
 
     await lessonSignUp(page, faker.name.findName(), faker.internet.email(), '4000 0027 6000 3184');
@@ -201,11 +201,11 @@ test.describe('Using different test cards', () => {
     await page.waitForTimeout(4000);
 
     // Click text=Complete authentication
-    await page.frame({name: 'acsFrame'})?.locator('text=Complete authentication').click({ timeout: 30 * 1000 });
+    await page.frame({ name: 'acsFrame' })?.locator('text=Complete authentication').click({ timeout: 30 * 1000 });
 
     // Expect success
     await expect(page.locator('text=Woohoo! They are going to call you the shredder')).toBeVisible({ timeout: 30 * 1000 });
-  
+
   });
 
   test('Should show Last 4 Card Digits after successful checkout:3.23', async ({ page }) => {
@@ -215,7 +215,7 @@ test.describe('Using different test cards', () => {
     // Go to http://localhost:${process.env.PORT}/lessons
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
 
-    await page.locator('text=Lessons Courses').click({timeout: 1000});
+    await page.locator('text=Lessons Courses').click({ timeout: 1000 });
     await openRegistrationPane(page);
 
     await lessonSignUp(page, faker.name.findName(), faker.internet.email(), VALID_CARD);
@@ -236,7 +236,7 @@ test.describe('Using different test cards', () => {
     // Go to http://localhost:${process.env.PORT}/lessons
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
 
-    await page.locator('text=Lessons Courses').click({timeout: 1000});
+    await page.locator('text=Lessons Courses').click({ timeout: 1000 });
     await openRegistrationPane(page);
 
     await lessonSignUp(page, faker.name.findName(), email, VALID_CARD);
@@ -250,7 +250,7 @@ test.describe('Using different test cards', () => {
 
     await fillPersonalDetails(page, faker.name.findName(), email);
     //click checkout
-    await page.locator('#checkout-btn').click({timeout:1000});
+    await page.locator('#checkout-btn').click({ timeout: 1000 });
 
     await expect(page.locator('text=A customer with that email address already exists. If you\'d like to update the c')).toBeVisible();
 
@@ -265,7 +265,7 @@ test.describe('Using different test cards', () => {
     // Go to http://localhost:${process.env.PORT}/lessons
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
 
-    await page.locator('text=Lessons Courses').click({timeout: 1000});
+    await page.locator('text=Lessons Courses').click({ timeout: 1000 });
     await openRegistrationPane(page);
 
     await lessonSignUp(page, faker.name.findName(), email, '4000 0000 0000 0002');
@@ -282,7 +282,7 @@ test.describe('Using different test cards', () => {
     // Go to http://localhost:${process.env.PORT}/lessons
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
 
-    await page.locator('text=Lessons Courses').click({timeout: 1000});
+    await page.locator('text=Lessons Courses').click({ timeout: 1000 });
     await openRegistrationPane(page);
 
     await lessonSignUp(page, faker.name.findName(), faker.internet.email(), '4000 0027 6000 3184');
@@ -295,10 +295,10 @@ test.describe('Using different test cards', () => {
     await page.waitForTimeout(4000);
 
     // Click text=Fail authentication
-    await page.frame({ name: 'acsFrame' })?.locator('text=Fail authentication').click({ timeout: 30 * 1000});
+    await page.frame({ name: 'acsFrame' })?.locator('text=Fail authentication').click({ timeout: 30 * 1000 });
 
     // Click text=We are unable to authenticate your payment method. Please choose a different pay
-    await page.locator('text=We are unable to authenticate your payment method. Please choose a different pay').click({ timeout: 30 * 1000});
+    await page.locator('text=We are unable to authenticate your payment method. Please choose a different pay').click({ timeout: 30 * 1000 });
 
   });
 
@@ -311,7 +311,7 @@ test.describe('Using different test cards', () => {
     // Go to http://localhost:${process.env.PORT}/lessons
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
 
-    await page.locator('text=Lessons Courses').click({timeout: 1000});
+    await page.locator('text=Lessons Courses').click({ timeout: 1000 });
     await openRegistrationPane(page);
 
     await lessonSignUp(page, faker.name.findName(), email, '4000 0000 0000 0002');
@@ -343,7 +343,7 @@ test.describe('Validating saved card and customer', () => {
 
     const browser = await chromium.launch();
     const page = await browser.newPage();
-    
+
     // Go to http://localhost:${process.env.PORT}/lessons
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
 
@@ -367,7 +367,7 @@ test.describe('Validating saved card and customer', () => {
 
     expect(paymentMethodResponse.has_more).toBe(false);
 
-  }); 
+  });
 
   test('Should set Name and Email on both the Customer and the Payment Method Objects:3.29', () => {
 
@@ -384,11 +384,11 @@ test.describe('Validating saved card and customer', () => {
   });
 
   test('Should add the Metadata about the First Lesson to the Customer Object:3.30', () => {
-      
+
     const currDate = new Date();
     currDate.setDate(currDate.getDate() + 9);
 
-    const lessonDateMonth = `${makeDateString(currDate)} ${currDate.toLocaleString('default', { month: 'short', timeZone: 'America/New_York'})}`;
+    const lessonDateMonth = `${makeDateString(currDate)} ${currDate.toLocaleString('default', { month: 'short', timeZone: 'America/New_York' })}`;
 
     expect(customerResponse.metadata.first_lesson).toBeTruthy();
     expect(customerResponse.metadata.first_lesson).toContain(lessonDateMonth);
