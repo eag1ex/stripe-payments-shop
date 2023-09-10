@@ -1,55 +1,59 @@
 /* eslint-disable no-console */
-require('dotenv').config({ path: './.env' });
+require("dotenv").config({ path: "./.env" });
 
 // do not remove
-require('./_preset');
+//require('./_preset');
 
-
-const express = require('express');
+const express = require("express");
 const app = express();
-const { resolve, join } = require('path');
+const { resolve, join } = require("path");
 // Replace if using a different env file or config
 
-const cors = require('cors');
-const { v4: uuidv4 } = require('uuid');
-const morgan = require('morgan')
-const bodyParser = require('body-parser')
-const ejs = require('ejs')
-const fs = require('fs');
-const { apiVersion, clientDir } = require('./config');
+const cors = require("cors");
+const { v4: uuidv4 } = require("uuid");
+const morgan = require("morgan");
+const bodyParser = require("body-parser");
+const ejs = require("ejs");
+const fs = require("fs");
+const { apiVersion, clientDir } = require("./config");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY, { apiVersion });
 // const { getCustomerPaymentMethodType }  = require('./services')
 
-const {apiRouter} = require('./api')
+const { apiRouter } = require("./api");
 const allitems = {};
-const apiBase = `https://api.stripe.com/v1`
-const { customerMetadata, customerExists, findCustomerSetupIntent } = require('./utils');
+const apiBase = `https://api.stripe.com/v1`;
+const {
+  customerMetadata,
+  customerExists,
+  findCustomerSetupIntent,
+} = require("./utils");
 
-
-app.set('trust proxy', 1) // trust first proxy
-app.use(morgan('dev'))
-app.engine('html', ejs.__express) 
-app.set('view engine', 'html')
-app.use(bodyParser.urlencoded({ extended: false }))
-
+app.set("trust proxy", 1); // trust first proxy
+app.use(morgan("dev"));
+app.engine("html", ejs.__express);
+app.set("view engine", "html");
+app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
-  try{
+  try {
     // fixed manifest issue
     if (/manifest.json/i.test(req.path)) {
-      res.header("Content-Type", 'application/json');
-      const manifest = JSON.parse(fs.readFileSync(join(__dirname, process.env.STATIC_DIR, clientDir,'manifest.json'), 'utf8'));
+      res.header("Content-Type", "application/json");
+      const manifest = JSON.parse(
+        fs.readFileSync(
+          join(__dirname, process.env.STATIC_DIR, clientDir, "manifest.json"),
+          "utf8"
+        )
+      );
       return res.status(200).json(manifest);
-
     }
-  }catch(err){
+  } catch (err) {
     return res.status(200).json({});
   }
   return next();
 });
 
 app.use(express.static(join(process.env.STATIC_DIR, clientDir)));
-
 
 // setupIntents =  stripe.setupIntents.list({
 //   customer: 'cus_OZinKz2wnwOFZT'
@@ -62,7 +66,7 @@ app.use(express.static(join(process.env.STATIC_DIR, clientDir)));
 // }).then(n=>{
 //   console.log('cus1',JSON.stringify(n.data))
 // })
-   
+
 // stripe.customers.retrieve('cus_OZcfJhKEMg5dQp', {
 //   expand: [] }).then(n => {
 //   console.log('cus2', n)
@@ -98,14 +102,9 @@ app.use(express.static(join(process.env.STATIC_DIR, clientDir)));
 //
 // "pm_1NmWvmDo67vHA3BFBUTXaRs0"
 
-
 // stripe.customers.search({ query: `name:"mike12345" AND email:"mike12345@email.com" AND metadata['type']:"second_lesson"`, expand: [] }).then(n => {
 //   console.log('customers.search12', JSON.stringify(n, false, 1))
 // })
-
-
-
-
 
 // stripe.customers.retrieve('cus_Oa4fBHkgqlcREw', {
 //   expand: ['invoice_settings.default_payment_method']
@@ -118,7 +117,6 @@ app.use(express.static(join(process.env.STATIC_DIR, clientDir)));
 // stripe.paymentMethods.retrieve('pm_1NmvLTDo67vHA3BFqXlDbyFt', { expand:['customer'] }).then((n)=>{
 //   console.log('cus2', n)
 // })
-
 
 // paymentIntent = stripe.paymentIntents.create({
 //   setup_future_usage: 'off_session',
@@ -137,17 +135,15 @@ app.use(express.static(join(process.env.STATIC_DIR, clientDir)));
 // })
 
 app.use(
-  express.json(
-    {
-      // Should use middleware or a function to compute it only when
-      // hitting the Stripe webhook endpoint.
-      verify: (req, res, buf) => {
-        if (req.originalUrl.startsWith('/webhook')) {
-          req.rawBody = buf.toString();
-        }
-      },
+  express.json({
+    // Should use middleware or a function to compute it only when
+    // hitting the Stripe webhook endpoint.
+    verify: (req, res, buf) => {
+      if (req.originalUrl.startsWith("/webhook")) {
+        req.rawBody = buf.toString();
+      }
     },
-  ),
+  })
 );
 
 app.use(cors({ origin: true }));
@@ -156,16 +152,14 @@ app.use(cors({ origin: true }));
 //   Promise.resolve(fn(req, res, next)).catch(next);
 // };
 
-
-
-app.post('/webhook', async (req, res) => {
+app.post("/webhook", async (req, res) => {
   let data, eventType;
 
   // Check if webhook signing is configured.
   if (process.env.STRIPE_WEBHOOK_SECRET) {
     // Retrieve the event by verifying the signature using the raw body and secret.
     let event;
-    let signature = req.headers['stripe-signature'];
+    let signature = req.headers["stripe-signature"];
     try {
       event = stripe.webhooks.constructEvent(
         req.rawBody,
@@ -185,20 +179,16 @@ app.post('/webhook', async (req, res) => {
     eventType = req.body.type;
   }
 
-  if (eventType === 'payment_intent.succeeded') {
+  if (eventType === "payment_intent.succeeded") {
     // Funds have been captured
     // Fulfill any orders, e-mail receipts, etc
     // To cancel the payment after capture you will need to issue a Refund (https://stripe.com/docs/api/refunds)
-    console.log('💰 Payment captured!');
-  } else if (eventType === 'payment_intent.payment_failed') {
-    console.log('❌ Payment failed.');
+    console.log("💰 Payment captured!");
+  } else if (eventType === "payment_intent.payment_failed") {
+    console.log("❌ Payment failed.");
   }
   res.sendStatus(200);
 });
-
-
-
-
 
 // Routes
 // app.get('/', (req, res) => {
@@ -222,9 +212,8 @@ app.post('/webhook', async (req, res) => {
 //        key: <STRIPE_PUBLISHABLE_KEY>
 //   }
 
-
 // load the api app
-app.use('/api', apiRouter(stripe))
+app.use("/api", apiRouter(stripe));
 
 // catch all other routes
 // app.all('*', function (req, res) {
@@ -232,12 +221,13 @@ app.use('/api', apiRouter(stripe))
 // })
 
 //Serving React
-app.get('*', (req, res) => {
-
-  res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
-  res.header('Expires', '-1');
-  res.header('Pragma', 'no-cache');
-  res.sendFile(join(__dirname, process.env.STATIC_DIR, clientDir, 'index.html'));
+app.get("*", (req, res) => {
+  res.header("Cache-Control", "private, no-cache, no-store, must-revalidate");
+  res.header("Expires", "-1");
+  res.header("Pragma", "no-cache");
+  res.sendFile(
+    join(__dirname, process.env.STATIC_DIR, clientDir, "index.html")
+  );
 });
 
 function errorHandler(err, req, res, next) {
@@ -246,4 +236,6 @@ function errorHandler(err, req, res, next) {
 
 app.use(errorHandler);
 
-app.listen(4242, () => console.log(`Node server listening on port http://localhost:${4242}`));
+app.listen(4242, () =>
+  console.log(`Node server listening on port http://localhost:${4242}`)
+);
