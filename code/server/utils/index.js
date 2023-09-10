@@ -1,74 +1,80 @@
-exports.customerMetadata = ({ type, date, time, }) => {
-    return {
-        // to satisfy stripe's metadata requirements
-        first_lesson: date,
-        type,
-        date,
-        time
-    }
-}
+exports.customerMetadata = ({ type, date, time }) => {
+  return {
+    // to satisfy stripe's metadata requirements
+    first_lesson: date,
+    type,
+    date,
+    time,
+  };
+};
 
 /**
  * @description search for customer, if it exists check if it has a payment method is assigned to it
- * @returns 
+ * @returns
  */
-exports.customerExists = async(stripe,{ learnerName, learnerEmail }) => {
-    try {
+exports.customerExists = async (stripe, { learnerName, learnerEmail }) => {
+  try {
+    // /**
+    //  * @returns {customer, card} || undefined
+    //  */
+    const listPaymentMethod = async (customer_id) => {
+      return (
+        await stripe.customers.listPaymentMethods(customer_id, {
+          type: "card",
+          expand: ["data.customer"],
+        })
+      )?.data[0];
+    };
+    // stripe.paymentIntents.list({ customer: 'cus_Oa4fBHkgqlcREw', expand: ['data.customer'] }).then(n => {
+    //     console.log('cus2', n)
+    // })
 
-        // /**
-        //  * @returns {customer, card} || undefined
-        //  */
-        const listPaymentMethod = async()=>{
-         return (await stripe.customers.listPaymentMethods(
-                customer_id,
-             { type: 'card', expand: ['data.customer'] }
-            ))?.data[0]
-        }
-        // stripe.paymentIntents.list({ customer: 'cus_Oa4fBHkgqlcREw', expand: ['data.customer'] }).then(n => {
-        //     console.log('cus2', n)
-        // })
-        
-        let cus
-        // `name:"${learnerName}" AND email:"${learnerEmail}"`
-        cus = await stripe.customers.search({ query: `email:"${learnerEmail}"`, expand: [] })
-        const customer_id = cus.data?.length ? cus.data[0].id : null
-        let exist = !!customer_id
-        if (customer_id) {
+    let cus;
+    // `name:"${learnerName}" AND email:"${learnerEmail}"`
+    cus = await stripe.customers.search({
+      query: `email:"${learnerEmail}"`,
+      expand: [],
+    });
+    const customer_id = cus.data?.length ? cus.data[0].id : null;
+    let exist = !!customer_id;
+    if (customer_id) {
+      console.log("[customerExists]", {
+        customer_id,
+        name: cus.data[0].name,
+        email: cus.data[0].email,
+      });
 
-            console.log('[customerExists]', { customer_id, name: cus.data[0].name, email: cus.data[0].email})
-
-            const paymentList = await listPaymentMethod(customer_id)
-            if (paymentList) {
-                cus = { data: [{ ...paymentList, ...cus.data[0] }]}
-                exist = true
-            }
-        }
-      
-        return { data: cus.data[0] ? [cus.data[0]] : [], exist }
-        // 
-    } catch (e) {
-        console.error('[customerExists][error]', e)
+      const paymentList = await listPaymentMethod(customer_id);
+      if (paymentList) {
+        cus = { data: [{ ...paymentList, ...cus.data[0] }] };
+        exist = true;
+      }
     }
-    return { data: [] }
-}
 
+    return { data: cus.data[0] ? [cus.data[0]] : [], exist };
+    //
+  } catch (e) {
+    console.error("[customerExists][error]", e);
+  }
+  return { data: [] };
+};
 
 /**
- * 
+ *
  * @returns stripe.setupIntents.list.data[0]
  */
 exports.findCustomerSetupIntent = async (stripe, customer_id) => {
-
-    try {
-        return (await stripe.setupIntents.list({
-            customer: customer_id
-        }))?.data[0] ||{}
-    } catch (err) {
-
-    }
-    return {}
-
-}
+  try {
+    return (
+      (
+        await stripe.setupIntents.list({
+          customer: customer_id,
+        })
+      )?.data[0] || {}
+    );
+  } catch (err) {}
+  return {};
+};
 
 // exports.createOrUpdateSetupIntent = async (stripe, customer_id,{ learnerName, learnerEmail, metadata }) => {
 
@@ -88,7 +94,7 @@ exports.findCustomerSetupIntent = async (stripe, customer_id) => {
 //     }catch(err){
 
 //     }
-   
+
 // }
 
 // setupIntent = await stripe.setupIntents.create({
@@ -98,3 +104,15 @@ exports.findCustomerSetupIntent = async (stripe, customer_id) => {
 //         enabled: true,
 //     },
 // });
+
+exports.delay = (time = 0) => {
+  const isNum = typeof time === "number" && time >= 0; // must provide number
+  if (!isNum) return Promise.resolve(true); // or resolve
+  // @ts-ignore
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => {
+      clearTimeout(t);
+      resolve(true);
+    }, time);
+  });
+};
