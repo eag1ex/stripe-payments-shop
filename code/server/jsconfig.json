@@ -1,0 +1,47 @@
+{
+    "compileOnSave": true,
+    "compilerOptions": {
+        "typeRoots": [
+            "./types"
+        ],
+        "declaration": true,
+        "sourceMap": false,
+        "checkJs": true,
+        "esModuleInterop": true,
+        "moduleResolution": "node",
+        "module": "esnext",
+        "target": "es2018",
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": true,
+        "baseUrl": "."
+    },
+    "outDir": "./types",
+    "files": [
+        "./server.js",
+    ],
+    "paths": {
+        "*": [
+            "node_modules/*"
+        ]
+    },
+    "lib": [
+        "es2018",
+        "dom"
+    ],
+    // "include": [
+    //     "src",
+    //     "methods",
+    //     "todo",
+    //     "prototyping.js",
+    //     "examples.js",
+    //     "Prototypes",
+    //     "__tests__"
+    // ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "umd",
+        "esm"
+    ]
+}

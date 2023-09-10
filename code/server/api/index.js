@@ -2,11 +2,11 @@ const express = require('express')
 const apiRouter = express.Router()
 const { resolve } = require('path');
 const { customerMetadata, customerExists, findCustomerSetupIntent } = require('../utils');
-
+const { paymentIntentCreateParams } = require('../config')
 
 /**
  * API router
- * @param {*} stripe 
+ * @param {import('stripe').Stripe} stripe 
  * @returns 
  */
 exports.apiRouter = (stripe) => {
@@ -68,28 +68,6 @@ exports.apiRouter = (stripe) => {
                 //     },
                 // });
 
-               const paymentIntent = await stripe.paymentIntents.create({
-                    setup_future_usage: 'off_session',
-                    // one customer only
-                     customer: r.id,
-                    payment_method_types: ['card'],
-                    confirm: false,
-                    receipt_email: learnerEmail,
-                    metadata: {},
-                    amount: 1000,
-                    currency: 'thb',
-                   // automatic_payment_methods: { enabled: true },
-                })     
-      
-          
-
-            console.log('[GET][lessons][customer]', r)
-            console.log('[GET][lessons][paymentIntent]', paymentIntent)
-
-
-            // type
-            // :"first_lesson"
-
             if (r.metadata) {
                 r.metadata.index = (() => {
                     let index
@@ -100,6 +78,19 @@ exports.apiRouter = (stripe) => {
                     return index
                 })()
             }
+
+               const paymentIntent = await stripe.paymentIntents.create({
+                   ...paymentIntentCreateParams,
+                   customer: r.id,  // one customer only
+                    confirm: false,
+                    receipt_email: learnerEmail,
+                    metadata: r.metadata,
+                   // automatic_payment_methods: { enabled: true },
+                })     
+      
+            console.log('[GET][lessons][customer]', r)
+            console.log('[GET][lessons][paymentIntent]', paymentIntent)
+
 
             // the values are confusing, customer object use as customerId
             const secrets = {
@@ -213,8 +204,6 @@ exports.apiRouter = (stripe) => {
         }
 
     });
-
-
 
 
     // TODO: Integrate Stripe
