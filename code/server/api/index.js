@@ -25,40 +25,6 @@ exports.apiRouter = (stripe) => {
   require("./ctrs").lessons(stripe, apiRouter);
   require("./ctrs").payments(stripe, apiRouter);
 
-  // TODO: Integrate Stripe
-
-  // Milestone 2: '/refund-lesson'
-  // Refunds a lesson payment.  Refund the payment from the customer (or cancel the auth
-  // if a payment hasn't occurred).
-  // Sets the refund reason to 'requested_by_customer'
-  //
-  // Parameters:
-  // payment_intent_id: the payment intent to refund
-  // amount: (optional) amount to refund if different than the original payment
-  //
-  // Example call:
-  // curl -X POST http://localhost:4242/refund-lesson \
-  //   -d payment_intent_id=pi_XXX \
-  //   -d amount=2500
-  //
-  // Returns
-  // If the refund is successfully created returns a JSON response of the format:
-  //
-  // {
-  //   refund: refund.id
-  // }
-  //
-  // If there was an error:
-  //  {
-  //    error: {
-  //        code: e.error.code,
-  //        message: e.error.message
-  //      }
-  //  }
-  apiRouter.post("/refund-lesson", async (req, res) => {
-    // TODO: Integrate Stripe
-  });
-
   // Milestone 3: Managing account info
   // Displays the account update page for a given customer
   apiRouter.get("/account-update/:customer_id", async (req, res) => {

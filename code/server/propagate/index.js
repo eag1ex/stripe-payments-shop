@@ -80,14 +80,42 @@ async function createPriceSession() {
 async function searchPaymentIntent() {
   //  status: 'requires_payment_method',
   try {
-    const paymentIntent = await Stripe.paymentIntents.search({
-      //requires_payment_method
-      query:
-        "amount:'500' AND customer:'cus_Oc23qxniyzc6P2' AND status:'succeeded'",
-    });
-    console.log("paymentIntent", paymentIntent);
+    const retrieve = await Stripe.paymentIntents.retrieve(
+      "pi_3No3NrDo67vHA3BF2MsnRgKA",
+      { expand: ["customer"] }
+    );
+    console.log("retrieve/paymentIntents", retrieve);
+    // const paymentIntent = await Stripe.paymentIntents.search({
+    //   // AND status:'succeeded'
+    //   //field~value
+    //   query: "amount:'500' AND pm:'pm_1No3NuDo67vHA3BFhEVIEbzL'",
+    // });
+
+    //console.log("paymentIntent", paymentIntent);
   } catch (err) {
     console.log("err", err.message.toString());
   }
 }
-searchPaymentIntent();
+//searchPaymentIntent();
+
+async function getCustomer() {
+  try {
+    const c = await Stripe.customers.retrieve("abc23");
+    console.log("customer", c);
+  } catch (err) {
+    console.log("err.code", err.code);
+    console.log("err.message", err.message);
+  }
+}
+
+//getCustomer();
+
+async function findPayment() {
+  //Stripe.customers.retrievePaymentMethod("cus_OcIvXRDpttFPx0");
+
+  const cus = await Stripe.customers.retrieve("cus_OcIvXRDpttFPx0", {
+    expand: ["customer"],
+  });
+  console.log("customer", cus);
+}
+findPayment();
