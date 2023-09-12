@@ -33,13 +33,10 @@ const formatSession = (index, id, session, time) => {
 
 //Lessons main component
 
-
-
 // https://stackoverflow.com/questions/1634748/how-can-i-delete-a-query-string-parameter-in-javascript
 
-
 const Lessons = (props) => {
-  DocumentTitle('Lessons Courses')
+  DocumentTitle("Lessons Courses");
 
   const [sessions, setSessions] = useState([]); //info about available sessions
   const [selected, setSelected] = useState(-1); //index of selected session
@@ -62,9 +59,9 @@ const Lessons = (props) => {
   useEffect(() => {
     let items = [];
     let session = new Date();
-    if (sessions.length>3){
-      return
-    }  
+    if (sessions.length > 3) {
+      return;
+    }
     session.setDate(session.getDate() + 9);
     items.push(formatSession(0, "first", session, "3:00 p.m."));
 
@@ -82,11 +79,17 @@ const Lessons = (props) => {
       {
         //Component to process user info for registration.
       }
-      <RegistrationForm history={props.history} selected={selected} details={details} session={sessions[selected]} onUpdate={(status,data)=>{
-        if(status==='registration'){
-          toggleItem(data.index)
-        }
-      }} />
+      <RegistrationForm
+        history={props.history}
+        selected={selected}
+        details={details}
+        session={sessions[selected]}
+        onUpdate={(status, data) => {
+          if (status === "registration") {
+            toggleItem(data.index);
+          }
+        }}
+      />
       <div className="lesson-title" id="title">
         <h2>Guitar lessons</h2>
       </div>

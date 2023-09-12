@@ -1,0 +1,26 @@
+{
+    "compileOnSave": true,
+    "compilerOptions": {
+        "jsx": "react",
+        "typeRoots": [
+            "./src/types"
+        ],
+        "declaration": true,
+        "sourceMap": false,
+        "checkJs": true,
+        "esModuleInterop": true,
+        "moduleResolution": "node",
+        "module": "esnext",
+        "target": "es2018",
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": true,
+        "baseUrl": "."
+    },
+     "outDir": "./src/types",
+    "lib": [
+        "es2018",
+        "dom"
+    ]
+   
+}
