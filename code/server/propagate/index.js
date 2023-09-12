@@ -108,14 +108,21 @@ async function searchPaymentIntent() {
 //searchPaymentIntent();
 
 async function getCustomer() {
-  try {
-    const c = await Stripe.customers.retrieve("abc23");
-    console.log("customer", c);
-  } catch (err) {
-    console.log("err.code", err.code);
-    console.log("err.message", err.message);
-  }
+  // try {
+  //   const c = await Stripe.customers.retrieve("abc23");
+  //   console.log("customer", c);
+  // } catch (err) {
+  //   console.log("err.code", err.code);
+  //   console.log("err.message", err.message);
+  // }
+
+  const c = await Stripe.customers.search({
+    query: `email:'johndoe123@email.com'`,
+  });
+  console.log("customer", c);
 }
+
+//getCustomer();
 
 async function searchCustomer() {
   //  AND status:'requires_confirmation'
@@ -129,8 +136,6 @@ async function searchCustomer() {
   await Stripe.customers.retrieve(customer, { expand: ["pa"] });
 }
 //searchCustomer();
-
-//getCustomer();
 
 async function findPayment() {
   //Stripe.customers.retrievePaymentMethod("cus_OcIvXRDpttFPx0");

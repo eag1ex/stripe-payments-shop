@@ -54,7 +54,6 @@ exports.postLessons =
       const meta = customerMetadata(metadata);
       const cus = await stripe.customers.search({
         query: `email:"${learnerEmail}"`,
-        expand: [],
       });
 
       if (cus.data?.length) {
@@ -66,6 +65,7 @@ exports.postLessons =
           customerId: d.id,
         });
       }
+
       const r = await stripe.customers.create({
         email: learnerEmail,
         name: learnerName,
@@ -100,7 +100,6 @@ exports.postLessons =
         ...(r.metadata ? { metadata: r.metadata } : {}),
         name: r.name,
         email: r.email,
-        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
       });
     } catch (error) {
       console.error("[lessons][error]", error);

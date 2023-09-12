@@ -2,25 +2,23 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import React, { useEffect, useState, useRef } from "react";
 import CardSetupForm from "./CardSetupForm";
-import CardCheckoutForm from './CardCheckoutForm';
-import { serverConfig } from '../Services/config';
-
+import CardCheckoutForm from "./CardCheckoutForm";
+import { serverConfig } from "../Services/config";
 
 // customer = { data.customer }
 // customerName = { data.customer.name }
 // customerEmail = { data.customer.email }
 
-
 const LoadStripe = (async () => {
-  let stripePromise
+  let stripePromise;
   try {
-    const STRIPE_PUBLISHABLE_KEY = (await serverConfig()).key
-    stripePromise = await loadStripe(STRIPE_PUBLISHABLE_KEY, { apiVersion: '2022-11-15' });
-  } catch (err) {
-
-  }
-  return stripePromise
-})()
+    const STRIPE_PUBLISHABLE_KEY = (await serverConfig()).key;
+    stripePromise = await loadStripe(STRIPE_PUBLISHABLE_KEY, {
+      apiVersion: "2022-11-15",
+    });
+  } catch (err) {}
+  return stripePromise;
+})();
 
 const UpdateCustomer = ({
   customer,
@@ -41,7 +39,7 @@ const UpdateCustomer = ({
   const [loadPaymentElement, setLoadPaymentElement] = useState(false);
   const stripePromise = useRef(LoadStripe);
   const selected = 1;
-  const appearance = {}
+  const appearance = {};
 
   //Get info to load page, User payment information, config API route in package.json "proxy"
   useEffect(() => {
@@ -58,7 +56,8 @@ const UpdateCustomer = ({
     // TODO: Integrate Stripe
   };
 
-  console.log('stripePromise', stripePromise.current)
+  console.log("stripePromise", stripePromise.current);
+  console.log("[customer]", customer);
   return (
     <div className="lesson-form">
       {!succeeded ? (
@@ -91,9 +90,25 @@ const UpdateCustomer = ({
                 />
               </div>
 
-              {stripePromise.current && (<Elements stripe={stripePromise.current} options={{ appearance, clientSecret: customer.clientSecret, theme: 'stripe' }}>
-                <CardCheckoutForm state={'update'} session={customer.metadata} clientSecret={customer.clientSecret} learnerName={customerName} learnerEmail={customerEmail} customerId={customerId} />
-              </Elements>)}
+              {stripePromise.current && (
+                <Elements
+                  stripe={stripePromise.current}
+                  options={{
+                    appearance,
+                    clientSecret: customer.clientSecret,
+                    theme: "stripe",
+                  }}
+                >
+                  <CardCheckoutForm
+                    state={"update"}
+                    session={customer.metadata}
+                    clientSecret={customer.clientSecret}
+                    learnerName={customerName}
+                    learnerEmail={customerEmail}
+                    customerId={customerId}
+                  />
+                </Elements>
+              )}
             </div>
             {error ? (
               <div id="card-errors">

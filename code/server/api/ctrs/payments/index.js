@@ -239,54 +239,6 @@ exports.scheduleLesson =
 // ----------------------------------
 
 /**
- * @GET
- * @api /payment-method/:customer_id
- * @param {Stripe} stripe
- */
-exports.customerPaymentMethod =
-  (stripe) =>
-  /**
-   * @param {Request} req
-   * @param {Response} res
-   **/
-  async (req, res) => {
-    const { customer_id } = req.params;
-
-    if (!customer_id)
-      return res
-        .status(400)
-        .send({ error: { message: "missing customer_id" } });
-
-    try {
-      let r;
-      const paymentList = (r = (
-        await stripe.customers.listPaymentMethods(customer_id, {
-          type: "card",
-          expand: ["data.customer"],
-        })
-      )?.data[0]);
-
-      // if no payment exists get customer instead
-      if (!paymentList) {
-        r = {
-          customer: await stripe.customers.retrieve(customer_id),
-        };
-      }
-
-      res.status(200).send({
-        ...r,
-      });
-    } catch (err) {
-      /** @type {StripeAPIError} */
-      const error = err;
-      console.log("[GET][payment-method][error]", error);
-      return res.status(400).send({ ...error });
-    }
-  };
-
-// ----------------------------------
-
-/**
  * @POST
  * @api /complete-lesson-payment
  * @param {Stripe} stripe

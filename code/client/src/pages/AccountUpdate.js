@@ -3,46 +3,45 @@ import Header from "../components/Header";
 import UpdateCustomer from "../components/UpdateCustomer";
 
 import "../css/lessons.scss";
-import { accountUpdate } from "../Services/account";
-import { useLocation } from 'react-router-dom';
+import { getCustomer } from "../Services/account";
+// import { useLocation } from "react-router-dom";
 import { useMatch } from "react-router-dom";
 import DocumentTitle from "../components/DocumentTitle";
 
 //Component responsable to update user's info.
 const AccountUpdate = () => {
-  DocumentTitle('Account Details')
+  DocumentTitle("Account Details");
+  const [status, setStatus] = useState("initial"); // loading, error, success
 
-  const { pathname, hash, key, state } = useLocation();
-  const customerData = state?.customer
-  const id = useMatch('/account-update/:id').params.id
+  //const { pathname, hash, key, state } = useLocation();
+  // const customerData = state?.customer;
 
-  const [data, setData] = useState(customerData || null)
+  const id = useMatch("/account-update/:id").params.id;
+  const [data, setData] = useState(null);
 
-  console.log('[AccountUpdate][route]', id)
+  console.log("[AccountUpdate][route]", id);
 
-  //Get info to load page, User payment information, config API route in package.json "proxy"
   useEffect(() => {
-    if (id){
-      const setup = async () => {
-        // NOTE this is a get request not sure why was it called update, confusing ...
-        const result = await accountUpdate(id);
-        console.log('[AccountUpdate][setup]', result)
-        if (result !== null) {
-          setData(result);
-        }
-      };
-      if (!data?.customer) setup();
+    if (id && status === "initial") {
+      setStatus("loading");
+      getCustomer(id)
+        .then((r) => {
+          setData(r);
+          setStatus("success");
+        })
+        .catch((e) => {
+          setStatus("error");
+        });
     }
-    
   }, [id]);
 
-  console.log('data.customer', data?.customer)
+  console.log("data.customer", data?.customer);
 
   const onSuccessfulConfirmation = async (customerId) => {
-    const result = await accountUpdate(id);
-    if (result !== null) {
-      setData(result);
-    }
+    // const result = await accountUpdate(id);
+    // if (result !== null) {
+    //   setData(result);
+    // }
   };
 
   return (

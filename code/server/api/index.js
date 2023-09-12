@@ -5,13 +5,14 @@ const fs = require("fs");
 
 const {
   completeLessonPayment,
-  customerPaymentMethod,
   scheduleLesson,
   refundLesson,
   lessonRefunds,
 } = require("./ctrs/payments");
 
 const { getLessons, postLessons } = require("./ctrs/lessons");
+
+const { getCustomerPaymentMethod } = require("./ctrs/update-customer");
 
 /**
  * API router
@@ -27,7 +28,7 @@ exports.apiRouter = (stripe) => {
   });
 
   //-- payments api
-  apiRouter.get("/payment-method/:customer_id", customerPaymentMethod(stripe));
+
   apiRouter.post("/complete-lesson-payment", completeLessonPayment(stripe));
   apiRouter.post("/schedule-lesson", scheduleLesson(stripe));
   apiRouter.post("/refund-lesson", refundLesson(stripe));
@@ -38,6 +39,17 @@ exports.apiRouter = (stripe) => {
   apiRouter.get("/lessons", getLessons(stripe));
   apiRouter.post("/lessons", postLessons(stripe));
   //----------------------------------
+
+  //-- update customer api
+  apiRouter.get(
+    "/payment-method/:customer_id",
+    getCustomerPaymentMethod(stripe)
+  );
+
+  apiRouter.post("/account-update", async (req, res) => {
+    // TODO: Handle updates to any of the customer's account details
+  });
+  // ----------------------------------
 
   // Milestone 3: Managing account info
   // Displays the account update page for a given customer
@@ -54,11 +66,6 @@ exports.apiRouter = (stripe) => {
 
   apiRouter.post("/update-payment-details/:customer_id", async (req, res) => {
     // TODO: Update the customer's payment details
-  });
-
-  // Handle account updates
-  apiRouter.post("/account-update", async (req, res) => {
-    // TODO: Handle updates to any of the customer's account details
   });
 
   // Milestone 3: '/delete-account'
