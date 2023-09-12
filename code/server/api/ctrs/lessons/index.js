@@ -1,33 +1,49 @@
-/** @typedef {import('stripe').Stripe.errors} StripeErrors */
+/** @typedef {import('stripe').Stripe} Stripe */
+/** @typedef {import('stripe').Stripe.errors.StripeAPIError} StripeAPIError */
+/** @typedef {import('stripe').Stripe.Customer} StripeCustomer */
+/** @typedef {import('express').Request} Request */
+/** @typedef {import('express').Response} Response */
 
 const { resolve } = require("path");
 const fs = require("fs");
-const { customerMetadata } = require("../../utils");
+const { customerMetadata } = require("../../../utils");
 
 /**
- * API router
- * @param {import('stripe').Stripe} stripe
- * @param {import('express').Router} apiRouter
+ * @GET
+ * @api /lessons/
+ * @param {Stripe} stripe
  * @returns
  */
-exports.lessons = (stripe, apiRouter) => {
-  //ATTENTION this is confusing, why do we even have this here, react does not generate a page for this, all rendered from index.html
-  // Milestone 1: Signing up
-  // Shows the lesson sign up page.
-  apiRouter.get("/lessons", (req, res) => {
+exports.getLessons =
+  (stripe) =>
+  /**
+   * @param {Request} req
+   * @param {Response} res
+   **/
+  async (req, res) => {
     try {
-      console.log("running sessons");
       const path = resolve(`${process.env.STATIC_DIR}/lessons.html`);
       if (!fs.existsSync(path)) throw Error();
-      console.log("running sessons2");
       res.sendFile(path);
     } catch (error) {
-      const path = resolve("./public/static-file-error.html");
+      const path = resolve(`${process.env.STATIC_DIR}/static-file-error.html`);
       res.sendFile(path);
     }
-  });
+  };
 
-  apiRouter.post("/lessons", async (req, res) => {
+/**
+ * @POST
+ * @api /lessons/
+ * @param {Stripe} stripe
+ * @returns
+ */
+exports.postLessons =
+  (stripe) =>
+  /**
+   * @param {Request} req
+   * @param {Response} res
+   **/
+  async (req, res) => {
     try {
       const { learnerEmail, learnerName, metadata, type } = req.body || {};
       if (!learnerEmail || !learnerName)
@@ -96,7 +112,4 @@ exports.lessons = (stripe, apiRouter) => {
         },
       });
     }
-  });
-
-  return apiRouter;
-};
+  };

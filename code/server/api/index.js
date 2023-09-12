@@ -2,6 +2,17 @@ const express = require("express");
 const apiRouter = express.Router();
 const { resolve } = require("path");
 const fs = require("fs");
+
+const {
+  completeLessonPayment,
+  customerPaymentMethod,
+  scheduleLesson,
+  refundLesson,
+  lessonRefunds,
+} = require("./ctrs/payments");
+
+const { getLessons, postLessons } = require("./ctrs/lessons");
+
 /**
  * API router
  * @param {import('stripe').Stripe} stripe
@@ -15,9 +26,18 @@ exports.apiRouter = (stripe) => {
     });
   });
 
-  require("./ctrs").card(stripe, apiRouter);
-  require("./ctrs").lessons(stripe, apiRouter);
-  require("./ctrs").payments(stripe, apiRouter);
+  //-- payments api
+  apiRouter.get("/payment-method/:customer_id", customerPaymentMethod(stripe));
+  apiRouter.post("/complete-lesson-payment", completeLessonPayment(stripe));
+  apiRouter.post("/schedule-lesson", scheduleLesson(stripe));
+  apiRouter.post("/refund-lesson", refundLesson(stripe));
+  apiRouter.get("/refunds/:refundId", lessonRefunds(stripe));
+  //----------------------------------
+
+  //-- lessons api
+  apiRouter.get("/lessons", getLessons(stripe));
+  apiRouter.post("/lessons", postLessons(stripe));
+  //----------------------------------
 
   // Milestone 3: Managing account info
   // Displays the account update page for a given customer

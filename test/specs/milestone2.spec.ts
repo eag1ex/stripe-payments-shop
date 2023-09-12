@@ -114,7 +114,7 @@ test.describe('Paying for lessons', () => {
   });
 
   test('Should Accept Payment Intent ID and an Amount as Input Parameters.:4.3.1', async ({ request }) => {
-        
+
     const data = {
       payment_intent_id: scheduleLessonResponse.id,
       amount: 123,
