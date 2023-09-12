@@ -14,20 +14,22 @@ const Stripe = require("stripe")(process.env.STRIPE_SECRET_KEY, { apiVersion });
  * list
  */
 
-function listCustomers() {
+function listCustomersDelete() {
   Stripe.customers.list({ limit: 10000 }).then(async (n) => {
     const ids = n.data.map((n) => n.id);
     for (const id of ids) {
       try {
         await Stripe.customers.del(id);
-        await delay(100);
+        await delay(50);
         console.log("deleted", id);
       } catch (err) {
         console.log("delete error", id, err);
       }
     }
   });
-} //listCustomers()
+} //
+
+//listCustomersDelete();
 
 async function createPriceSession() {
   //   const product = await Stripe.products.create({
@@ -156,4 +158,4 @@ async function retrievePi() {
   );
   console.log("pi", pi);
 }
-retrievePi();
+//retrievePi();
