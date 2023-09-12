@@ -2,12 +2,7 @@
 
 const { resolve } = require("path");
 const fs = require("fs");
-const {
-  customerMetadata,
-  customerExists,
-  findCustomerSetupIntent,
-} = require("../../utils");
-const { paymentIntentCreateParams } = require("../../config");
+const { customerMetadata } = require("../../utils");
 
 /**
  * API router
@@ -35,14 +30,12 @@ exports.lessons = (stripe, apiRouter) => {
   apiRouter.post("/lessons", async (req, res) => {
     try {
       const { learnerEmail, learnerName, metadata, type } = req.body || {};
-
-      console.log("[lessons][body]", req.body);
       if (!learnerEmail || !learnerName)
         return res.status(400).send({
           error: { message: "missing learnerEmail or learnerName" },
         });
 
-      const meta = customerMetadata(metadata || {});
+      const meta = customerMetadata(metadata);
       const cus = await stripe.customers.search({
         query: `email:"${learnerEmail}"`,
         expand: [],
@@ -63,17 +56,8 @@ exports.lessons = (stripe, apiRouter) => {
         metadata: meta,
       });
 
-      // let setupIntent
-
-      // setupIntent = await stripe.setupIntents.create({
-      //     customer: r.id,
-      //     metadata: meta,
-      //     automatic_payment_methods: {
-      //         enabled: true,
-      //     },
-      // });
-
       if (r.metadata) {
+        // @ts-ignore
         r.metadata.index = (() => {
           let index;
           if (r.metadata.type === "first_lesson") index = 0;
@@ -84,23 +68,14 @@ exports.lessons = (stripe, apiRouter) => {
         })();
       }
 
-      const paymentIntent = await stripe.paymentIntents.create({
-        ...paymentIntentCreateParams,
-
-        customer: r.id, // one customer only
-        confirm: false,
-        receipt_email: learnerEmail,
+      const setupIntent = await stripe.setupIntents.create({
+        customer: r.id,
         metadata: r.metadata,
-        // automatic_payment_methods: { enabled: true },
       });
-
-      console.log("[GET][lessons][customer]", r);
-      console.log("[GET][lessons][paymentIntent]", paymentIntent);
 
       // the values are confusing, customer object use as customerId
       const secrets = {
-        paymentIntent: paymentIntent?.client_secret,
-        // setupIntent: setupIntent?.client_secret
+        setupIntent: setupIntent?.client_secret,
       };
       return res.send({
         exist: false,
@@ -117,6 +92,7 @@ exports.lessons = (stripe, apiRouter) => {
       res.status(400).send({
         error: {
           message: error.message,
+          code: error.code,
         },
       });
     }

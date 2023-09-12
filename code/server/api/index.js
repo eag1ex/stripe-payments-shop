@@ -1,12 +1,6 @@
 const express = require("express");
 const apiRouter = express.Router();
 const { resolve } = require("path");
-const {
-  customerMetadata,
-  customerExists,
-  findCustomerSetupIntent,
-} = require("../utils");
-const { paymentIntentCreateParams } = require("../config");
 const fs = require("fs");
 /**
  * API router

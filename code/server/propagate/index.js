@@ -80,18 +80,25 @@ async function createPriceSession() {
 async function searchPaymentIntent() {
   //  status: 'requires_payment_method',
   try {
-    const retrieve = await Stripe.paymentIntents.retrieve(
-      "pi_3No3NrDo67vHA3BF2MsnRgKA",
-      { expand: ["customer"] }
-    );
-    console.log("retrieve/paymentIntents", retrieve);
+    // const retrieve = await Stripe.paymentIntents.retrieve(
+    //   "pi_3No3NrDo67vHA3BF2MsnRgKA",
+    //   { expand: ["customer"] }
+    // );
+    // console.log("retrieve/paymentIntents", retrieve);
     // const paymentIntent = await Stripe.paymentIntents.search({
     //   // AND status:'succeeded'
     //   //field~value
     //   query: "amount:'500' AND pm:'pm_1No3NuDo67vHA3BFhEVIEbzL'",
     // });
 
-    //console.log("paymentIntent", paymentIntent);
+    const pi = (
+      await Stripe.paymentIntents.list({ customer: "cus_Ocebh60mKHMsrX" })
+    ).data;
+    // .filter((n) => {
+    //   n.status === "requires_confirmation";
+    // })[0];
+
+    //console.log("paymentIntent/list", pi);
   } catch (err) {
     console.log("err", err.message.toString());
   }
@@ -108,6 +115,19 @@ async function getCustomer() {
   }
 }
 
+async function searchCustomer() {
+  //  AND status:'requires_confirmation'
+  const customer = `cus_Oce96XbH00AWfM`;
+  const searchPayment = await Stripe.paymentIntents.search({
+    query: `customer:'${customer}'`,
+  });
+  // console.log("searchPayment", searchPayment);
+  // expand payment intent
+
+  await Stripe.customers.retrieve(customer, { expand: ["pa"] });
+}
+//searchCustomer();
+
 //getCustomer();
 
 async function findPayment() {
@@ -118,4 +138,22 @@ async function findPayment() {
   });
   console.log("customer", cus);
 }
-findPayment();
+//findPayment();
+
+async function listPaymentMethod() {
+  const paymentMethods = await Stripe.customers.listPaymentMethods(
+    "cus_Ocf6WcNYDwZGCO",
+    { type: "card", expand: ["data.customer"] }
+  );
+  console.log("customer", paymentMethods);
+}
+//listPaymentMethod();
+
+async function retrievePi() {
+  const pi = await Stripe.paymentIntents.retrieve(
+    "pi_3NpQDkDo67vHA3BF2ro3Z3km",
+    { expand: ["customer"] }
+  );
+  console.log("pi", pi);
+}
+retrievePi();

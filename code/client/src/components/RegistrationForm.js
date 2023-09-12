@@ -123,10 +123,11 @@ const RegistrationForm = (props) => {
         }
       })
       .catch((e) => {
+        setCustomer(null);
+        delCustomerSession();
         console.log("[RegistrationForm][error]", e);
         setError(e.message);
         setProcessing(false);
-        delCustomerSession();
       });
   };
 
@@ -136,7 +137,7 @@ const RegistrationForm = (props) => {
     return <>{body}</>;
   }
   if (
-    customer?.secrets?.paymentIntent &&
+    customer?.secrets?.setupIntent &&
     customer?.exist === false &&
     selected !== -1
   ) {
@@ -146,7 +147,7 @@ const RegistrationForm = (props) => {
           stripe={stripePromise.current}
           options={{
             appearance,
-            clientSecret: customer?.secrets?.paymentIntent,
+            clientSecret: customer?.secrets?.setupIntent,
             loader: "auto",
           }}
         >

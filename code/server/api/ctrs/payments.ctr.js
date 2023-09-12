@@ -1,6 +1,8 @@
-/** @typedef {import('stripe').Stripe.errors.StripeAPIError} StripeAPIError */
+// @ts-nocheck
 
-const { findCustomerSetupIntent } = require("../../utils");
+/** @typedef {import('stripe').Stripe.errors.StripeAPIError} StripeAPIError */
+/** @typedef {import('stripe').Stripe.Customer} StripeCustomer */
+
 const { paymentIntentCreateParams } = require("../../config");
 const e = require("express");
 /**
@@ -20,9 +22,6 @@ exports.payments = (stripe, apiRouter) => {
       return res
         .status(400)
         .send({ error: { message: "missing customer_id" } });
-
-    // if
-    console.log("[GET][payment-method][customer]", customer_id);
 
     try {
       let r;
@@ -47,8 +46,8 @@ exports.payments = (stripe, apiRouter) => {
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err;
-      error.raw;
-      return res.status(400).send({ error: error.raw });
+      console.log("[GET][payment-method][error]", error);
+      return res.status(400).send({ ...error });
     }
   });
 
@@ -91,14 +90,14 @@ exports.payments = (stripe, apiRouter) => {
         payment_intent_id
       );
 
-      if (retrievePayment.amount !== amount) {
-        console.log(
-          "[complete-lesson-payment][amount]",
-          `param.${amount} does not match payment.${retrievePayment.amount}`
-        );
-      }
+      let amount_to_capture =
+        !!amount && retrievePayment.amount_capturable !== Number(amount)
+          ? Number(amount)
+          : -1;
+
       const confirmPayment = await stripe.paymentIntents.capture(
-        payment_intent_id
+        payment_intent_id,
+        { ...(amount_to_capture !== -1 && { amount_to_capture }) }
       );
 
       return res.status(200).send({
@@ -107,10 +106,10 @@ exports.payments = (stripe, apiRouter) => {
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err;
-
+      console.error("[complete-lesson-payment][error]", error);
       return res.status(400).send({
         error: {
-          message: error.raw?.message,
+          message: error.raw?.message || "generic_error_check_logs",
           code: error.code,
         },
       });
@@ -148,8 +147,6 @@ exports.payments = (stripe, apiRouter) => {
   apiRouter.post("/schedule-lesson", async (req, res) => {
     const { customer_id, amount, description } = req.body;
 
-    console.log("[schedule-lesson][body][1]", req.body);
-
     try {
       if (!customer_id || !amount || !description) {
         return res.status(400).send({
@@ -158,61 +155,49 @@ exports.payments = (stripe, apiRouter) => {
         });
       }
 
-      //---- check if customer exists first
-      await stripe.customers.retrieve(customer_id);
-      console.log("[schedule-lesson][retrieve][2]", "ok");
+      const paymentMethod = (
+        await stripe.customers.listPaymentMethods(customer_id, {
+          type: "card",
+          expand: ["data.customer"],
+        })
+      ).data[0];
 
-      const searchPayment = await stripe.paymentIntents.search({
-        query: `amount:'${amount}' AND customer:'${customer_id}' AND status:'requires_capture'`,
+      /** @type {StripeCustomer} */
+      const customer = paymentMethod.customer;
+
+      const piCreate = await stripe.paymentIntents.create({
+        ...paymentIntentCreateParams,
+        amount,
+        description: description.toString(),
+        payment_method: paymentMethod.id,
+        metadata: { ...customer.metadata },
+        customer: customer.id,
+        receipt_email: customer.email,
       });
 
-      if (!searchPayment.data.length) {
-        return res.status(400).send({
-          error: true,
-          message: "no payment found",
-        });
-      } else {
-        console.log("[schedule-lesson][searchPayment][3]", "ok");
+      // if not set the status will be 'requires_confirmation'
+      const paymentIntentConfirm = await stripe.paymentIntents.confirm(
+        piCreate.id,
+        { payment_method: "pm_card_visa", capture_method: "manual" }
+      );
 
-        const paymentId = searchPayment.data[0].id;
-
-        //---- update payment intent description and metadata
-        const updatePayment = await stripe.paymentIntents.update(paymentId, {
-          description: description.toString(),
-          expand: ["customer"],
-          metadata: { type: "lessons-payment" },
-        });
-
-        console.log("[schedule-lesson][updatePayment][4]", "ok");
-
-        return res.status(200).send({
-          payment: {
-            ...updatePayment,
-          },
-        });
-      }
+      return res.status(200).send({
+        payment: {
+          ...paymentIntentConfirm,
+        },
+      });
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err;
-      if (error.code === "resource_missing") {
-        return res.status(400).send({
-          error: {
-            message: error.raw?.message,
-            code: error.code,
-          },
-        });
-      } else if (error.rawType === "invalid_request_error") {
-        if (error.raw?.headers) delete error.raw.headers;
-        return res.status(400).send({
-          error: {
-            ...(error.raw || {}),
-          },
-        });
-      } else {
-        return res.status(400).send({
-          ...error,
-        });
-      }
+
+      console.error("[schedule-lesson][error]", error);
+
+      return res.status(400).send({
+        error: {
+          message: error.raw?.message,
+          code: error.code,
+        },
+      });
     }
   });
 
@@ -249,16 +234,17 @@ exports.payments = (stripe, apiRouter) => {
   apiRouter.post("/refund-lesson", async (req, res) => {
     const { payment_intent_id, amount } = req.body;
 
-    if (!payment_intent_id || !amount) {
+    if (!payment_intent_id) {
       return res.status(400).send({
         error: true,
-        message: "missing payment_intent_id, amount",
+        message: "missing payment_intent_id",
       });
     }
 
     try {
       // check payment status to see if we can do refund or cancel
       const pi = await stripe.paymentIntents.retrieve(payment_intent_id);
+
       const canCancel = [
         "requires_payment_method",
         "requires_capture",
@@ -273,8 +259,13 @@ exports.payments = (stripe, apiRouter) => {
           type: "canceled",
         });
       } else {
+        let refundAmount =
+          !!amount && pi.amount_capturable !== Number(amount)
+            ? Number(amount)
+            : -1;
+
         const refund = await stripe.refunds.create({
-          amount,
+          ...(refundAmount !== -1 && { amount: refundAmount }),
           payment_intent: payment_intent_id,
         });
         return res.status(200).send({
@@ -285,7 +276,7 @@ exports.payments = (stripe, apiRouter) => {
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err;
-
+      console.error("[refund-lesson][error]", error);
       return res.status(400).send({
         error: {
           message: error.raw?.message,

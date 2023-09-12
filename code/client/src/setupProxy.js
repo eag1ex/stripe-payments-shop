@@ -1,11 +1,13 @@
-const { createProxyMiddleware } = require('http-proxy-middleware');
+// @ts-nocheck
 
+const { createProxyMiddleware } = require("http-proxy-middleware");
+const { proxy } = require("../package.json");
 module.exports = function (app) {
-    app.use(
-        '/api',
-        createProxyMiddleware({
-            target: 'http://localhost:4242',
-            changeOrigin: true,
-        })
-    );
+  app.use(
+    "/api",
+    createProxyMiddleware({
+      target: proxy,
+      changeOrigin: true,
+    })
+  );
 };
