@@ -1,18 +1,13 @@
-const express = require("express");
-const apiRouter = express.Router();
-const { resolve } = require("path");
-const fs = require("fs");
+const express = require('express')
+const apiRouter = express.Router()
+const { resolve } = require('path')
+const fs = require('fs')
 
-const {
-  completeLessonPayment,
-  scheduleLesson,
-  refundLesson,
-  lessonRefunds,
-} = require("./ctrs/payments");
+const { completeLessonPayment, scheduleLesson, refundLesson, lessonRefunds } = require('./ctrs/payments')
 
-const { getLessons, postLessons } = require("./ctrs/lessons");
+const { getLessons, postLessons } = require('./ctrs/lessons')
 
-const { getCustomerPaymentMethod } = require("./ctrs/update-customer");
+const { getCustomerPaymentMethod, accountUpdate } = require('./ctrs/update-customer')
 
 /**
  * API router
@@ -21,52 +16,46 @@ const { getCustomerPaymentMethod } = require("./ctrs/update-customer");
  */
 exports.apiRouter = (stripe) => {
   // import and mount api routes
-  apiRouter.get("/config", (req, res) => {
+  apiRouter.get('/config', (req, res) => {
     res.send({
       key: process.env.STRIPE_PUBLISHABLE_KEY,
-    });
-  });
+    })
+  })
 
   //-- payments api
 
-  apiRouter.post("/complete-lesson-payment", completeLessonPayment(stripe));
-  apiRouter.post("/schedule-lesson", scheduleLesson(stripe));
-  apiRouter.post("/refund-lesson", refundLesson(stripe));
-  apiRouter.get("/refunds/:refundId", lessonRefunds(stripe));
+  apiRouter.post('/complete-lesson-payment', completeLessonPayment(stripe))
+  apiRouter.post('/schedule-lesson', scheduleLesson(stripe))
+  apiRouter.post('/refund-lesson', refundLesson(stripe))
+  apiRouter.get('/refunds/:refundId', lessonRefunds(stripe))
   //----------------------------------
 
   //-- lessons api
-  apiRouter.get("/lessons", getLessons(stripe));
-  apiRouter.post("/lessons", postLessons(stripe));
+  apiRouter.get('/lessons', getLessons(stripe))
+  apiRouter.post('/lessons', postLessons(stripe))
   //----------------------------------
 
   //-- update customer api
-  apiRouter.get(
-    "/payment-method/:customer_id",
-    getCustomerPaymentMethod(stripe)
-  );
-
-  apiRouter.post("/account-update", async (req, res) => {
-    // TODO: Handle updates to any of the customer's account details
-  });
+  apiRouter.get('/payment-method/:customer_id', getCustomerPaymentMethod(stripe))
+  apiRouter.post('/account-update/:customer_id', accountUpdate(stripe))
   // ----------------------------------
 
   // Milestone 3: Managing account info
   // Displays the account update page for a given customer
-  apiRouter.get("/account-update/:customer_id", async (req, res) => {
+  apiRouter.get('/account-update/:customer_id', async (req, res) => {
     try {
-      const path = resolve(`${process.env.STATIC_DIR}/account-update.html`);
-      if (!fs.existsSync(path)) throw Error();
-      res.sendFile(path);
+      const path = resolve(`${process.env.STATIC_DIR}/account-update.html`)
+      if (!fs.existsSync(path)) throw Error()
+      res.sendFile(path)
     } catch (error) {
-      const path = resolve("./public/static-file-error.html");
-      res.sendFile(path);
+      const path = resolve('./public/static-file-error.html')
+      res.sendFile(path)
     }
-  });
+  })
 
-  apiRouter.post("/update-payment-details/:customer_id", async (req, res) => {
+  apiRouter.post('/update-payment-details/:customer_id', async (req, res) => {
     // TODO: Update the customer's payment details
-  });
+  })
 
   // Milestone 3: '/delete-account'
   // Deletes a customer object if there are no uncaptured payment intents for them.
@@ -96,9 +85,9 @@ exports.apiRouter = (stripe) => {
   //      }
   //  }
   //
-  apiRouter.post("/delete-account/:customer_id", async (req, res) => {
+  apiRouter.post('/delete-account/:customer_id', async (req, res) => {
     // TODO: Integrate Stripe
-  });
+  })
 
   // Milestone 4: '/calculate-lesson-total'
   // Returns the total amounts for payments for lessons, ignoring payments
@@ -114,9 +103,9 @@ exports.apiRouter = (stripe) => {
   //      net_total: Total amount the store has collected from payments, minus their fees.
   // }
   //
-  apiRouter.get("/calculate-lesson-total", async (req, res) => {
+  apiRouter.get('/calculate-lesson-total', async (req, res) => {
     // TODO: Integrate Stripe
-  });
+  })
 
   // Milestone 4: '/find-customers-with-failed-payments'
   // Returns any customer who meets the following conditions:
@@ -151,9 +140,9 @@ exports.apiRouter = (stripe) => {
   //   {},
   // ]
 
-  apiRouter.get("/find-customers-with-failed-payments", async (req, res) => {
+  apiRouter.get('/find-customers-with-failed-payments', async (req, res) => {
     // TODO: Integrate Stripe
-  });
+  })
 
-  return apiRouter;
-};
+  return apiRouter
+}

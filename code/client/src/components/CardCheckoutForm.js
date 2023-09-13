@@ -1,31 +1,24 @@
-import React, { useState } from "react";
-import {
-  PaymentElement,
-  useElements,
-  useStripe,
-  LinkAuthenticationElement,
-  CardElement,
-  AddressElement,
-} from "@stripe/react-stripe-js";
-import { checkoutResp } from "../utils/index";
+import React, { useState } from 'react'
+import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
+import { checkoutResp } from '../utils/index'
 
 const CardCheckoutForm = (props) => {
-  const [message, setMessage] = useState(null);
-  const [status, setStatus] = useState("initial"); // initial | loading | ready | exit
-  const { customer, onSuccessfulConfirmation } = props;
-  const stripe = useStripe();
-  const elements = useElements();
+  const [message, setMessage] = useState(null)
+  const [status, setStatus] = useState('initial') // initial | loading | ready | exit
+  const { customer, onSuccessfulConfirmation, type } = props // type = 'create' | 'update'
+  const stripe = useStripe()
+  const elements = useElements()
 
   const handleClick = async (e) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    if (status === "loading") return;
+    e.preventDefault()
+    if (!stripe || !elements) return
+    if (status === 'loading') return
 
-    setStatus("loading");
+    setStatus('loading')
     try {
       const { setupIntent, error } = await stripe.confirmSetup({
         elements,
-        redirect: "if_required",
+        redirect: 'if_required',
         confirmParams: {
           payment_method_data: {
             billing_details: {
@@ -33,85 +26,50 @@ const CardCheckoutForm = (props) => {
               name: customer.name,
             },
           },
-          expand: ["payment_method"],
+          expand: ['payment_method'],
         },
-      });
+      })
 
-      // console.log("setupIntent", setupIntent);
-      // console.log("setupIntent/error", error);
-
-      if (error?.type === "card_error" || error?.type === "validation_error") {
-        console.log(error.message);
-        setMessage(error.message);
-        setStatus("initial");
-        return;
+      if (error?.type === 'card_error' || error?.type === 'validation_error') {
+        console.log(error.message)
+        setMessage(error.message)
+        setStatus('initial')
+        return
       }
       if (error) {
         // Show error to your customer (for example, insufficient funds)
-        console.log(error.message);
-        if (typeof onSuccessfulConfirmation === "function")
-          onSuccessfulConfirmation("setup-error", error.message);
-        setStatus("initial");
-        setMessage(error.message);
-        return;
+        console.error(error)
+        if (typeof onSuccessfulConfirmation === 'function') onSuccessfulConfirmation(type, 'setup-error', error.message)
+        setStatus('initial')
+        setMessage(error.message)
+        return
       }
-      // console.log('[CardCheckoutForm][setupIntent]', setupIntent)
-      // The payment has been processed!
-      onSuccessfulConfirmation("success", checkoutResp({ ...setupIntent }));
+      onSuccessfulConfirmation(type, 'success', checkoutResp({ ...setupIntent }))
     } catch (err) {
-      setStatus("initial");
-      onSuccessfulConfirmation("pm-error", err);
+      setStatus('initial')
+      onSuccessfulConfirmation(type, 'pm-error', err)
     }
-  };
+  }
 
-  if (!customer) return null;
+  if (!customer) return null
 
   return (
     <form onSubmit={handleClick}>
       <div style={{ marginBottom: 20, marginTop: 5 }}>
-        {/* <LinkAuthenticationElement id="link-authentication-element"
-            // Access the email value like so:
-            onChange={(event) => {
-                console.log('LinkAuthenticationElement/value', event.value)
-            }}
-                options={{ defaultValues: { email: customer.email, name: customer.name  }}}
-            /> */}
         <PaymentElement
           className="card"
           options={{
-            paymentMethodOrder: ["card"],
+            paymentMethodOrder: ['card'],
             defaultValues: {
               billingDetails: { name: customer.name, email: customer.email },
             },
-            layout: { type: "tabs" },
+            layout: { type: 'tabs' },
           }}
         />
 
-        {/* <div id="card-element" className="card" style={{  marginBottom: 10 }}>
-                <div  className="lesson-info smaller" style={{ marginTop: 5, marginBottom:10 }}>
-                    Card details
-                </div>
-                <CardElement options={CARD_ELEMENT_OPTIONS} />
-            </div>
-
-
-            <div id="address-element" className="card-address" >
-                <div className="lesson-info smaller" style={{ marginTop: 5, marginBottom: 10 }}>
-                    Billing Address
-                </div>
-                <AddressElement onReady={(e)=>{
-                    console.log('eeee is', e)
-                }} options={{ defaultValues: { name: customer.name || '' }, display: { name: 'full', }, allowedCountries: ['US', 'TH'], mode: 'billing', autocomplete: { mode: 'automatic' }, fields: { address: {line1:'never'} } }} />
-
-            </div> */}
-
-        <button id="submit" disabled={!stripe || status === "loading"}>
-          {" "}
-          {status === "loading" ? (
-            <div className="spinner" id="spinner"></div>
-          ) : (
-            <span id="button-text">Confirm initial payment</span>
-          )}
+        <button id="submit" disabled={!stripe || status === 'loading'}>
+          {' '}
+          {status === 'loading' ? <div className="spinner" id="spinner"></div> : <span id="button-text">Confirm</span>}
         </button>
         {/* {message && <div id="payment-message" className="lesson-info smaller" style={{marginTop:5}}>{message}</div>} */}
         {message && (
@@ -123,7 +81,7 @@ const CardCheckoutForm = (props) => {
         )}
       </div>
     </form>
-  );
-};
+  )
+}
 
-export default CardCheckoutForm;
+export default CardCheckoutForm
