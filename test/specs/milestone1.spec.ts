@@ -152,7 +152,7 @@ test.describe('Using different test cards', () => {
   })
 
   test('Should disable the Request Lesson Button while Setup Intents are created/used:3.12', async ({ page }) => {
-
+  
     // Go to http://localhost:${process.env.PORT}/lessons
     await page.goto(`http://localhost:${process.env.PORT}/lessons`, { waitUntil: 'networkidle' });
     await page.locator('text=Lessons Courses').click({timeout: 1000});
@@ -164,7 +164,6 @@ test.describe('Using different test cards', () => {
     // Make sure spinner is disabled
     await expect(page.locator('#spinner.spinner')).toBeVisible();
     await expect(page.locator('#submit')).toBeDisabled();
-
   });
 
   test('Should schedule a Lesson using a non 3DS Card:3.21', async ({ page, request }) => {
