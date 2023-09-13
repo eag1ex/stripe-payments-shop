@@ -8,6 +8,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import CardCheckoutForm from './CardCheckoutForm'
 import { serverConfig } from '../Services/config'
 import { customerAccountUpdate } from 'src/Services/account'
+import { MESSAGES } from '../constants'
 import { setCustomerSession, customerFromSession, delCustomerSession, delay } from '../utils/index'
 const LoadStripe = (async () => {
   let stripePromise
@@ -23,7 +24,7 @@ const LoadStripe = (async () => {
 const UpdateCustomer = ({ customer, customerName, customerEmail, customerUpdateConfirmation }) => {
   // identifies the status for api request to {{baseUrl}}/v1/account-update/:customer_id
   const [status, setStatus] = useState('initial') // 'initial'|'loading' | 'success' | 'error'
-  const [error, setError] = useState(status === 'error' ? 'Customer email already exists' : null)
+  const [error, setError] = useState(null)
 
   const [email, setEmail] = useState(customerEmail)
   const [name, setName] = useState(customerName)
@@ -45,7 +46,7 @@ const UpdateCustomer = ({ customer, customerName, customerEmail, customerUpdateC
       })
       .catch((e) => {
         setStatus('error')
-        setError('Customer email already exists')
+        setError(MESSAGES.EMAIL_EXISTS)
       })
   }
 
