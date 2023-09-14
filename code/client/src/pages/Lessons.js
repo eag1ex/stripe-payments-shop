@@ -28,7 +28,7 @@ const formatSession = (index, id, session, time) => {
   date = `${date} ${months[session.getMonth()]}`;
   let title = `${date} ${time}`;
   let type = `${id}_lesson`;
-  return { index, id, title, date, time, selected: "", type };
+  return { index, id, title, date, time, selected: "", type, timestamp: session.getTime() };
 };
 
 //Lessons main component

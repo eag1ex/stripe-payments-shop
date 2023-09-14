@@ -3,13 +3,14 @@
 /** @typedef {import('stripe').Stripe.PaymentIntent} PaymentIntent */
 /** @typedef {import('stripe').Stripe.PaymentIntent.Status} PaymentIntentStatus */
 
-exports.customerMetadata = ({ type, date, time }) => {
+exports.customerMetadata = ({ type, date, time,timestamp }) => {
   return {
     // to satisfy stripe's metadata requirements
     first_lesson: date,
     type,
     date,
     time,
+    timestamp
   };
 };
 

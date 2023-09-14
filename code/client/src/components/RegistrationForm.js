@@ -35,7 +35,7 @@ const RegistrationForm = (props) => {
   const appearance = {
     labels: 'floating',
   }
-
+  console.log('session',session)
   const handleChange = async (value, field) => {
     if (field === 'learnerEmail') setLearnerEmail(value)
     if (field === 'learnerName') setLearnerName(value)
@@ -60,7 +60,7 @@ const RegistrationForm = (props) => {
     setError(null)
     setProcessing(true)
     setCustomer(null)
-
+  
     createCustomer({ learnerEmail, learnerName, metadata: session })
       .then((n) => {
         if (n.exist) {

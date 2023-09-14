@@ -17,5 +17,14 @@ export namespace CustomerType {
         billing_details: Stripe.PaymentMethod.BillingDetails
         customerId: string
     }
+    export interface LessonSession {
+        date:string;
+        id:string;
+        index:string;
+        selected:'selected'
+        title:string;
+        type:'first_lesson'|'second_lesson' | 'third_lesson';
+        timestamp:number;
+    }
 }
 

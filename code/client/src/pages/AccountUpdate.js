@@ -12,7 +12,7 @@ import '../css/lessons.scss'
 import { getCustomer } from '../Services/account'
 import { useMatch } from 'react-router-dom'
 import DocumentTitle from '../components/DocumentTitle'
-import { setCustomerSession } from '../utils'
+import { delCustomerSession, setCustomerSession } from '../utils'
 
 const AccountUpdate = () => {
   DocumentTitle('Account Details')
@@ -33,11 +33,11 @@ const AccountUpdate = () => {
         })
         .catch((e) => {
           setStatus('error')
+          delCustomerSession()
         })
     }
   }, [id])
 
-  console.log('data.customer', customerData?.customer)
 
   /**
    *

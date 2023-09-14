@@ -106,9 +106,31 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
   if (eventType === 'payment_method.attached') {
     if (data?.object?.object === 'payment_method') {
+
+     
+
       // update customer name and email via webhook instead of using: /account-update/:customer_id
       /** @type {PaymentMethod} */
       const pm = data.object
+        try{
+           // when ever new payment method is attached check and delete old payment methods
+        const customersPaymentMethods = (await stripe.customers.listPaymentMethods(
+          pm.customer
+        )).data
+
+        for( const n of customersPaymentMethods){
+          if(n.id !== pm.id) {
+            await stripe.paymentMethods.detach(n.id)
+            console.log('[customersPaymentMethods][detached]', pm.customer, ' old payment_method_id: ', n.id )
+          }
+        }
+
+        }catch(err){
+          console.error('[webhook][customersPaymentMethods][detach]', pm.customer, err)
+        }
+      
+
+
       try {
         // make sure we only update if the email is valid
         const email = EMAIL_REGEX.test(pm.billing_details?.email) && pm.billing_details?.email

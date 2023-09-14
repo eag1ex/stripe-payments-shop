@@ -27,23 +27,31 @@ exports.deleteCustomerAccount =
 
      /**
       * 
-      * @param {StripeCustomer} cust 
       * @returns any
       */
-    const deleteCustomer = async (cust)=>{
+    const deleteCustomer = async (id)=>{
       try{
-        if(cust.deleted) return false
-        await stripe.customers.del(cust.id)
-        return true
+        let d = await stripe.customers.del(id)
+        return d.deleted
       }catch(err){
-       console.error('[deleteCustomerAccount][deleteCustomer][error]',cust?.id, err)
+       console.error('[deleteCustomerAccount][deleteCustomer][error]',id, err)
       }
-     
       return false
     }
 
     try {
+
+      // customer exists ?
+      const isDeleted = await stripe.customers.retrieve(customer_id)
+      if(isDeleted.deleted) return res.status(200).send({ deleted: true })
+
       const piList = await stripe.paymentIntents.list({ customer: customer_id, expand: ['data.customer'] })
+      
+      if (!piList.data?.length) {
+        const del = await deleteCustomer(customer_id)
+        return res.status(200).send({ deleted: del })
+      }
+
       const piIncomplete = piList.data.filter((n) => n.status !== 'succeeded' /*&& n.status !== 'canceled' */)
 
       // If the student has any uncaptured payments, then it returns a list of Payment Intent IDs.
@@ -60,8 +68,9 @@ exports.deleteCustomerAccount =
           /** @type {StripeCustomer} */
           const customer = pi.customer
           if(typeof customer ==='object') {
-            await deleteCustomer(customer)
-            deleted.push(customer.id)
+            if(customer?.deleted) continue
+            const del = await deleteCustomer(customer.id)
+            if(del) deleted.push(customer.id)
           }
         }
 
@@ -155,7 +164,7 @@ exports.getCustomerPaymentMethod =
       /** @type {StripeAPIError} */
       const error = err
       console.log('[GET][getCustomerPaymentMethod][error]', error)
-      return res.status(400).send({ ...error })
+      return res.status(400).send({ error: { message: error.message, code: error.code } })
     }
   }
 
@@ -173,7 +182,7 @@ exports.accountUpdate =
    * @param {Response} res
    **/
   async (req, res) => {
-    const { name, email } = req.body
+    const { email } = req.body
     const { customer_id } = req.params
 
     try {
@@ -191,7 +200,7 @@ exports.accountUpdate =
         return r
       })()
 
-      if (!!results && results.id !== customer_id) throw Error(`CUSTOMER_WITH_EMAIL_ALREADY_EXISTS`)
+      if ((!!results && !!results?.id) && results?.id !== customer_id) throw Error(`CUSTOMER_WITH_EMAIL_ALREADY_EXISTS`)
 
       const si = (await stripe.setupIntents.list({ customer: customer_id })).data[0]
       if (!si) throw Error(`setupIntent for customer: ${customer_id} not found`)

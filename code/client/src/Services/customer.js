@@ -1,14 +1,16 @@
 import { errorHandler } from '../utils'
 
-const metaData = ({ type, date, time }) => {
+const metaData = ({ type, date, time,timestamp }) => {
   return {
     type,
     date,
     time,
+    timestamp
   }
 }
 
 export const createCustomer = async ({ learnerEmail, learnerName, metadata }) => {
+  // customer metadata is LessonSession
   const response = await fetch('/api/lessons', {
     method: 'post',
     headers: {

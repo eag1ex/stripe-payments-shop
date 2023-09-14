@@ -6,7 +6,7 @@ import SignupComplete from './SignupComplete'
 import CardCheckoutForm from './CardCheckoutForm'
 
 const CardSetupForm = (props) => {
-  const { session, selected, type, details, customer, customerUpdateConfirmation } = props
+  const { session, selected, type, details, customer } = props
 
   /** @type {[CardSetupIntentConfirmation, React.Dispatch<CardSetupIntentConfirmation>]}  */
   const [billingData, setBillingData] = useState(null)
@@ -47,6 +47,7 @@ const CardSetupForm = (props) => {
               <CardCheckoutForm
                 type={type}
                 customer={customer}
+                // LessonSession type
                 session={session}
                 /**
                  * @param {StripeSetupIntent} result
