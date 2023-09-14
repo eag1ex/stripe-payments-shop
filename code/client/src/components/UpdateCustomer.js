@@ -26,12 +26,22 @@ const UpdateCustomer = ({ customer, customerName, customerEmail, customerUpdateC
   const [status, setStatus] = useState('initial') // 'initial'|'loading' | 'success' | 'error'
   const [error, setError] = useState(null)
 
-  const [email, setEmail] = useState(customerEmail)
-  const [name, setName] = useState(customerName)
+  const [email, setEmail] = useState(customerEmail || '')
+  const [name, setName] = useState(customerName || '')
   const [setupIntentSecret, setSetupIntentSecret] = useState(null)
   const stripePromise = useRef(LoadStripe)
   const appearance = {
     labels: 'floating',
+  }
+
+  const DisplayCustomerDetails = () => {
+    return (
+      <div className="lesson-input-box first">
+        <span>
+          {name || customer?.name} ({email || customer?.email})
+        </span>
+      </div>
+    )
   }
 
   const initiateStripeHandler = () => {
@@ -46,7 +56,8 @@ const UpdateCustomer = ({ customer, customerName, customerEmail, customerUpdateC
       })
       .catch((e) => {
         setStatus('error')
-        setError(MESSAGES.EMAIL_EXISTS)
+        if (e.toString().includes('INVALID_EMAIL')) setError(MESSAGES.INVALID_EMAIL)
+        else setError(MESSAGES.EMAIL_EXISTS)
       })
   }
 
@@ -86,11 +97,7 @@ const UpdateCustomer = ({ customer, customerName, customerEmail, customerUpdateC
               </>
             ) : (
               <>
-                <div className="lesson-input-box first">
-                  <span>
-                    {name} ({email})
-                  </span>
-                </div>
+                <DisplayCustomerDetails />
               </>
             )}
 
@@ -100,31 +107,33 @@ const UpdateCustomer = ({ customer, customerName, customerEmail, customerUpdateC
                 options={{
                   appearance,
                   clientSecret: setupIntentSecret,
-                  theme: 'stripe',
+                  loader: 'auto',
                 }}
               >
-                <CardCheckoutForm
-                  type={'update'}
-                  customer={{ name, email }}
-                  onSuccessfulConfirmation={(type, status, resp) => {
-                    if (type !== 'update') return
+                <div className="lesson-payment-element">
+                  <CardCheckoutForm
+                    type={'update'}
+                    customer={{ name: name || customer?.name, email: email || customer?.email }}
+                    onSuccessfulConfirmation={(type, status, resp) => {
+                      if (type !== 'update') return
 
-                    console.log('customerUpdate!!!', status, resp)
-                    /** @type {CardSetupIntentConfirmation} */
-                    const r = resp
+                      console.log('customerUpdate!!!', status, resp)
+                      /** @type {CardSetupIntentConfirmation} */
+                      const r = resp
 
-                    if (status === 'success') {
-                      if (typeof customerUpdateConfirmation === 'function') {
-                        customerUpdateConfirmation(status, r)
-                        delay(100).then(() => {
-                          setStatus('initial')
-                        })
+                      if (status === 'success') {
+                        if (typeof customerUpdateConfirmation === 'function') {
+                          customerUpdateConfirmation(status, r)
+                          delay(100).then(() => {
+                            setStatus('initial')
+                          })
+                        }
+                      } else {
+                        console.log('error', status, r)
                       }
-                    } else {
-                      console.log('error', status, r)
-                    }
-                  }}
-                />
+                    }}
+                  />
+                </div>
               </Elements>
             )}
           </div>

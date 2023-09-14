@@ -7,7 +7,7 @@ const { completeLessonPayment, scheduleLesson, refundLesson, lessonRefunds } = r
 
 const { getLessons, postLessons } = require('./ctrs/lessons')
 
-const { getCustomerPaymentMethod, accountUpdate } = require('./ctrs/update-customer')
+const { getCustomerPaymentMethod, accountUpdate,deleteCustomerAccount } = require('./ctrs/customer-account')
 
 /**
  * API router
@@ -35,59 +35,26 @@ exports.apiRouter = (stripe) => {
   apiRouter.post('/lessons', postLessons(stripe))
   //----------------------------------
 
-  //-- update customer api
+  //-- customer account api
   apiRouter.get('/payment-method/:customer_id', getCustomerPaymentMethod(stripe))
   apiRouter.post('/account-update/:customer_id', accountUpdate(stripe))
+  apiRouter.post('/delete-account/:customer_id', deleteCustomerAccount(stripe))
   // ----------------------------------
 
   // Milestone 3: Managing account info
   // Displays the account update page for a given customer
-  apiRouter.get('/account-update/:customer_id', async (req, res) => {
-    try {
-      const path = resolve(`${process.env.STATIC_DIR}/account-update.html`)
-      if (!fs.existsSync(path)) throw Error()
-      res.sendFile(path)
-    } catch (error) {
-      const path = resolve('./public/static-file-error.html')
-      res.sendFile(path)
-    }
-  })
-
-  apiRouter.post('/update-payment-details/:customer_id', async (req, res) => {
-    // TODO: Update the customer's payment details
-  })
-
-  // Milestone 3: '/delete-account'
-  // Deletes a customer object if there are no uncaptured payment intents for them.
-  //
-  // Parameters:
-  //   customer_id: the id of the customer to delete
-  //
-  // Example request
-  //   curl -X POST http://localhost:4242/delete-account/:customer_id \
-  //
-  // Returns 1 of 3 responses:
-  // If the customer had no uncaptured charges and was successfully deleted returns the response:
-  //   {
-  //        deleted: true
+  // apiRouter.get('/account-update/:customer_id', async (req, res) => {
+  //   try {
+  //     const path = resolve(`${process.env.STATIC_DIR}/account-update.html`)
+  //     if (!fs.existsSync(path)) throw Error()
+  //     res.sendFile(path)
+  //   } catch (error) {
+  //     const path = resolve('./public/static-file-error.html')
+  //     res.sendFile(path)
   //   }
-  //
-  // If the customer had uncaptured payment intents, return a list of the payment intent ids:
-  //   {
-  //     uncaptured_payments: ids of any uncaptured payment intents
-  //   }
-  //
-  // If there was an error:
-  //  {
-  //    error: {
-  //        code: e.error.code,
-  //        message: e.error.message
-  //      }
-  //  }
-  //
-  apiRouter.post('/delete-account/:customer_id', async (req, res) => {
-    // TODO: Integrate Stripe
-  })
+  // })
+
+ 
 
   // Milestone 4: '/calculate-lesson-total'
   // Returns the total amounts for payments for lessons, ignoring payments

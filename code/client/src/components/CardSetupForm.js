@@ -7,8 +7,6 @@ import CardCheckoutForm from './CardCheckoutForm'
 
 const CardSetupForm = (props) => {
   const { session, selected, type, details, customer, customerUpdateConfirmation } = props
-  const [error, setError] = useState(null)
-  console.log('customer??', customer, type)
 
   /** @type {[CardSetupIntentConfirmation, React.Dispatch<CardSetupIntentConfirmation>]}  */
   const [billingData, setBillingData] = useState(null)
@@ -28,25 +26,15 @@ const CardSetupForm = (props) => {
   return (
     <div className={`lesson-form`}>
       <div className={`lesson-desc`}>
-        {type === 'create' && (
-          <>
-            <h3>Registration details</h3>
-            <div id="summary-table" className="lesson-info">
-              {details}
-            </div>
-            <div className="lesson-legal-info">
-              Your card will not be charged. By registering, you hold a session slot which we will confirm within 24
-              hrs.
-            </div>
-          </>
-        )}
-
-        {type === 'update' && (
-          <>
-            <h3>Update your Payment details</h3>
-            <div className="lesson-info">Fill out the form below if you'd like to us to use a new card.</div>
-          </>
-        )}
+        <>
+          <h3>Registration details</h3>
+          <div id="summary-table" className="lesson-info">
+            {details}
+          </div>
+          <div className="lesson-legal-info">
+            Your card will not be charged. By registering, you hold a session slot which we will confirm within 24 hrs.
+          </div>
+        </>
 
         <div className="lesson-grid">
           <div className="lesson-inputs">

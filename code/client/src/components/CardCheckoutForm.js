@@ -22,6 +22,7 @@ const CardCheckoutForm = (props) => {
         confirmParams: {
           payment_method_data: {
             billing_details: {
+              // if new email is not set then use the old one
               email: customer.email,
               name: customer.name,
             },

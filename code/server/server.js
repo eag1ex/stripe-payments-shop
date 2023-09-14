@@ -19,7 +19,7 @@ const cors = require('cors')
 const { v4: uuidv4 } = require('uuid')
 const morgan = require('morgan')
 const bodyParser = require('body-parser')
-
+const { EMAIL_REGEX } = require('./constants')
 const ejs = require('ejs')
 const fs = require('fs')
 const { apiVersion, clientDir } = require('./config')
@@ -30,6 +30,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, { apiVersion })
 // const { getCustomerPaymentMethodType }  = require('./services')
 
 const { apiRouter } = require('./api')
+const e = require('express')
 const allitems = {}
 const apiBase = `https://api.stripe.com/v1`
 
@@ -109,11 +110,16 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       /** @type {PaymentMethod} */
       const pm = data.object
       try {
-        await stripe.customers.update(pm.customer, {
-          name: pm.billing_details.name,
-          email: pm.billing_details.email,
-        })
-        console.log('[webhook][customers][updated]', pm.customer)
+        // make sure we only update if the email is valid
+        const email = EMAIL_REGEX.test(pm.billing_details?.email) && pm.billing_details?.email
+        const name = pm.billing_details?.name
+        if (!!email || !!name) {
+          await stripe.customers.update(pm.customer, {
+            ...(name && { name }),
+            ...(email && { email }),
+          })
+          console.log('[webhook][customers][updated]', pm.customer)
+        }
       } catch (err) {
         console.error('[webhook][error]', pm.customer, err)
       }
