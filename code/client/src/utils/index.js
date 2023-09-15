@@ -73,6 +73,38 @@ export const customerFromSession = () => {
   return customer
 }
 
+//format session's date
+export const formatSession = (index, id, session, time) => {
+
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sept",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+
+  let date = session.getDate();
+  if (date <= 9) {
+    date = "0" + date;
+  }
+  date = `${date} ${months[session.getMonth()]}`;
+  let title = `${date} ${time}`;
+  let type = `${id}_lesson`;
+  return { index, id, title, date, time, selected: "", type, timestamp: session.getTime() };
+};
+
+
+
+
 /**
  * Set customer session
  */

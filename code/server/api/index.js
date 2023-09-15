@@ -8,6 +8,9 @@ const { completeLessonPayment, scheduleLesson, refundLesson, lessonRefunds } = r
 const { getLessons, postLessons } = require('./ctrs/lessons')
 
 const { getCustomerPaymentMethod, accountUpdate,deleteCustomerAccount } = require('./ctrs/customer-account')
+const { createProduct } = require('../libs/products')
+
+
 
 /**
  * API router
@@ -15,6 +18,13 @@ const { getCustomerPaymentMethod, accountUpdate,deleteCustomerAccount } = requir
  * @returns
  */
 exports.apiRouter = (stripe) => {
+
+  // stripe pre/requisites
+   createProduct(stripe,'Guitar Lesson','guitar_lesson')
+   createProduct(stripe,'Test product','test_product')
+
+
+
   // import and mount api routes
   apiRouter.get('/config', (req, res) => {
     res.send({

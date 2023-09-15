@@ -24,6 +24,8 @@ const ejs = require('ejs')
 const fs = require('fs')
 const { apiVersion, clientDir } = require('./config')
 
+const { createSubSchedule,updateSubSchedule } = require('./libs/schedules')
+
 /** @type {Stripe} */
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, { apiVersion })
 
@@ -104,10 +106,27 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     console.log('[webhook][object][id]', data?.object?.id)
   }
 
-  if (eventType === 'payment_method.attached') {
-    if (data?.object?.object === 'payment_method') {
 
-     
+  if(eventType === 'payment_intent.amount_capturable_updated'){
+ 
+    try{
+      const {metadata, customer,description,amount, id:pi_id} =  await stripe.paymentIntents.retrieve(data.object.id,{expand:['customer']})
+      // try to create a scheduled subscription for the customer, if schedule already exists update it
+      let created = await createSubSchedule(stripe, customer.id,'guitar_lesson', metadata,description)
+      if(!created) await updateSubSchedule(stripe, customer.id,'guitar_lesson', amount)
+      
+
+    }catch(err){
+      console.error(err)
+    }
+  }
+
+  // if(eventType === 'customer.subscription.created'){
+  //   console.log('[webhook][object][id]', data?.object)
+  // }
+
+
+  if (eventType === 'payment_method.attached') {
 
       // update customer name and email via webhook instead of using: /account-update/:customer_id
       /** @type {PaymentMethod} */
@@ -126,7 +145,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
         }
 
         }catch(err){
-          console.error('[webhook][customersPaymentMethods][detach]', pm.customer, err)
+          console.error(pm.customer, err)
         }
       
 
@@ -143,10 +162,25 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
           console.log('[webhook][customers][updated]', pm.customer)
         }
       } catch (err) {
-        console.error('[webhook][error]', pm.customer, err)
+        console.error( pm.customer, err)
       }
-    }
+    
   }
+
+  // try to manually invoice customer if its due
+  if(eventType === 'invoice.created'){
+    // const invoice = await stripe.invoices.finalizeInvoice(
+    //   'in_1NqaOMDo67vHA3BFNn4Cj8Ls',
+     
+    // );
+    // // pay if need to 
+    // const invoice = await stripe.invoices.pay(
+    //   'in_1NqaOMDo67vHA3BFNn4Cj8Ls'
+    // );
+
+  }
+
+ 
 
   if (eventType === 'payment_intent.succeeded') {
     // Funds have been captured

@@ -3,33 +3,10 @@ import Header from "../components/Header";
 import RegistrationForm from "../components/RegistrationForm";
 import "../css/lessons.scss";
 import DocumentTitle from "../components/DocumentTitle";
+import { formatSession } from "src/utils";
 // import { createBrowserHistory } from 'history';
-const months = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sept",
-  "Oct",
-  "Nov",
-  "Dec",
-];
 
-//format session's date
-const formatSession = (index, id, session, time) => {
-  let date = session.getDate();
-  if (date <= 9) {
-    date = "0" + date;
-  }
-  date = `${date} ${months[session.getMonth()]}`;
-  let title = `${date} ${time}`;
-  let type = `${id}_lesson`;
-  return { index, id, title, date, time, selected: "", type, timestamp: session.getTime() };
-};
+
 
 //Lessons main component
 
