@@ -1,11 +1,12 @@
-// @ts-nocheck
-
 /* eslint-disable no-console */
 require('dotenv').config({ path: './.env' })
 
 /** @typedef {import('stripe').Stripe.errors} StripeErrors */
 /** @typedef {import('stripe').Stripe} Stripe */
 /** @typedef {import('stripe').Stripe.PaymentMethod} PaymentMethod */
+/** @typedef {import('stripe').Stripe.PaymentIntent} PaymentIntent */
+/** @typedef {import('stripe').Stripe.Customer} Customer*/
+/** @typedef {import('stripe').Stripe.Charge}  Charge*/
 
 // do not remove
 //require("./_preset");
@@ -24,7 +25,8 @@ const ejs = require('ejs')
 const fs = require('fs')
 const { apiVersion, clientDir } = require('./config')
 
-const { createSubSchedule,updateSubSchedule } = require('./libs/schedules')
+const { createSubSchedule, updateSubSchedule } = require('./libs/schedules')
+const { cancelCustomerSubscriptions } = require('./utils')
 
 /** @type {Stripe} */
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, { apiVersion })
@@ -48,7 +50,10 @@ app.use((req, res, next) => {
     if (/manifest.json/i.test(req.path)) {
       res.header('Content-Type', 'application/json')
       const manifest = JSON.parse(
-        fs.readFileSync(join(__dirname, process.env.STATIC_DIR, clientDir, 'manifest.json'), 'utf8'),
+        fs.readFileSync(
+          join(__dirname, process.env.STATIC_DIR, clientDir, 'manifest.json'),
+          'utf8',
+        ),
       )
       return res.status(200).json(manifest)
     }
@@ -83,7 +88,11 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     let event
     let signature = req.headers['stripe-signature']
     try {
-      event = stripe.webhooks.constructEvent(req.rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET)
+      event = stripe.webhooks.constructEvent(
+        req.rawBody,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET,
+      )
     } catch (err) {
       console.log(`⚠️  Webhook signature verification failed.`)
       return res.sendStatus(400)
@@ -106,17 +115,18 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     console.log('[webhook][object][id]', data?.object?.id)
   }
 
+  if (eventType === 'payment_intent.amount_capturable_updated') {
+    try {
+      /** @type {PaymentIntent} */
+      const pi = data.object
 
-  if(eventType === 'payment_intent.amount_capturable_updated'){
- 
-    try{
-      const {metadata, customer,description,amount, id:pi_id} =  await stripe.paymentIntents.retrieve(data.object.id,{expand:['customer']})
-      // try to create a scheduled subscription for the customer, if schedule already exists update it
-      let created = await createSubSchedule(stripe, customer.id,'guitar_lesson', metadata,description)
-      if(!created) await updateSubSchedule(stripe, customer.id,'guitar_lesson', amount)
+      /** @type {Customer} */
+      const cus = await stripe.customers.retrieve(pi.customer)
+
+      // customer exists and has no subscription schedule
+      await createSubSchedule(stripe, cus.id, 'guitar_lesson', cus.metadata, pi.description)
       
-
-    }catch(err){
+    } catch (err) {
       console.error(err)
     }
   }
@@ -125,68 +135,87 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   //   console.log('[webhook][object][id]', data?.object)
   // }
 
-
   if (eventType === 'payment_method.attached') {
+    // update customer name and email via webhook instead of using: /account-update/:customer_id
+    /** @type {PaymentMethod} */
+    const pm = data.object
 
-      // update customer name and email via webhook instead of using: /account-update/:customer_id
-      /** @type {PaymentMethod} */
-      const pm = data.object
-        try{
-           // when ever new payment method is attached check and delete old payment methods
-        const customersPaymentMethods = (await stripe.customers.listPaymentMethods(
-          pm.customer
-        )).data
+    try {
+      // when ever new payment method is attached check and delete old payment methods
+      const customersPaymentMethods = (await stripe.customers.listPaymentMethods(pm.customer)).data
 
-        for( const n of customersPaymentMethods){
-          if(n.id !== pm.id) {
-            await stripe.paymentMethods.detach(n.id)
-            console.log('[customersPaymentMethods][detached]', pm.customer, ' old payment_method_id: ', n.id )
-          }
+      for (const n of customersPaymentMethods) {
+        if (n.id !== pm.id) {
+          await stripe.paymentMethods.detach(n.id)
+          console.log(
+            '[customersPaymentMethods][detached]',
+            pm.customer,
+            ' old payment_method_id: ',
+            n.id,
+          )
         }
-
-        }catch(err){
-          console.error(pm.customer, err)
-        }
-      
-
-
-      try {
-        // make sure we only update if the email is valid
-        const email = EMAIL_REGEX.test(pm.billing_details?.email) && pm.billing_details?.email
-        const name = pm.billing_details?.name
-        if (!!email || !!name) {
-          await stripe.customers.update(pm.customer, {
-            ...(name && { name }),
-            ...(email && { email }),
-          })
-          console.log('[webhook][customers][updated]', pm.customer)
-        }
-      } catch (err) {
-        console.error( pm.customer, err)
       }
-    
+    } catch (err) {
+      console.error(pm.customer, err)
+    }
+
+    // add new subscription schedule id to customer metadata
+
+    try {
+      // make sure we only update if the email is valid
+      const email = EMAIL_REGEX.test(pm.billing_details?.email) && pm.billing_details?.email
+      const name = pm.billing_details?.name
+      if (!!email || !!name) {
+        await stripe.customers.update(pm.customer, {
+          ...(name && { name }),
+          ...(email && { email }),
+        })
+        console.log('[webhook][customers][updated]', pm.customer)
+      }
+    } catch (err) {
+      console.error(pm.customer, err)
+    }
+  }
+
+  if (eventType === 'charge.refunded') {
+    /** @type {Charge} */
+    const rf = data.object
+    // cancel subscription schedule
+
+    await cancelCustomerSubscriptions(stripe, rf.customer)
+    // update customer metadata
+  }
+
+  if (eventType === 'customer.deleted') {
+    /** @type {Customer} */
+    const cus = data.object
+    // cancel subscription schedule
+    await cancelCustomerSubscriptions(stripe, cus.id)
   }
 
   // try to manually invoice customer if its due
-  if(eventType === 'invoice.created'){
+  if (eventType === 'invoice.created') {
+    // console.log('[webhook][invoice.created][object]', JSON.stringify(data?.object, null, 1))
     // const invoice = await stripe.invoices.finalizeInvoice(
     //   'in_1NqaOMDo67vHA3BFNn4Cj8Ls',
-     
     // );
-    // // pay if need to 
+    // // pay if need to
     // const invoice = await stripe.invoices.pay(
     //   'in_1NqaOMDo67vHA3BFNn4Cj8Ls'
     // );
-
   }
-
- 
 
   if (eventType === 'payment_intent.succeeded') {
     // Funds have been captured
     // Fulfill any orders, e-mail receipts, etc
     // To cancel the payment after capture you will need to issue a Refund (https://stripe.com/docs/api/refunds)
     console.log('💰 Payment captured!')
+    
+    /** @type {PaymentIntent} */
+    const pi = data.object
+    await cancelCustomerSubscriptions(stripe, pi.customer)
+
+
   } else if (eventType === 'payment_intent.payment_failed') {
     console.log('❌ Payment failed.')
   }

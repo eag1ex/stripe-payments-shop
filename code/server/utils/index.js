@@ -26,6 +26,50 @@ exports.delay = (time = 0) => {
   });
 };
 
+
+// exports.searchScheduleAndDeleteIt = async (stripe, customerId) => {
+//   try {
+//     const schedules = await stripe.subscriptionSchedules.list({
+//       customer: customerId,
+//     });
+//     const sub = schedules.data.filter(n => n.status !== 'canceled')
+//     if (sub.length) {
+//       console.log('[searchScheduleAndDeleteIt]', sub[0].id, sub[0].status)
+//       await stripe.subscriptionSchedules.del(sub[0].id)
+//     }
+
+//   } catch (err) {
+//     console.log('[searchScheduleAndDeleteIt][error]', err.message)
+//   }
+// }
+
+
+/**
+ * Cancel all subscriptions for a customer
+ * @param {Stripe} stripe 
+ * @param {*} customerId 
+
+ */
+exports.cancelCustomerSubscriptions = async (stripe, customerId) => {
+
+  try {
+
+    const subscriptionSchedule = (await stripe.subscriptionSchedules.list({
+      customer: customerId,
+    })).data.filter(n=>n.status!=='canceled')
+
+    for (const n of subscriptionSchedule) {
+      let c = await stripe.subscriptionSchedules.cancel(n.id)
+      console.log('schedule canceled', c.id, c.status, `cus:${customerId}`)
+    }
+    return true
+  } catch (err) {
+    console.log('[cancelCustomerSubscriptions][error]', err.message)
+  }
+  return false
+}
+
+
 /**
  * @description search for customer, if it exists check if it has a payment method is assigned to it
  * @returns

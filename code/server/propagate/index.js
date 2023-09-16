@@ -30,7 +30,7 @@ function listCustomersDelete() {
   });
 } //
 
-//listCustomersDelete();
+listCustomersDelete();
 
 async function createPriceSession() {
   //   const product = await Stripe.products.create({
@@ -241,17 +241,18 @@ async function createPrice(){
 
 
 async function cancelSubSchedules(){
-  // const subscriptionSchedule = await Stripe.subscriptionSchedules.list({customer:'cus_OdV8wCVl9MQGBP'})
-  // console.log('subscriptionSchedule/count'  ,subscriptionSchedule.data.length)
-  // for(const n of subscriptionSchedule.data){
-  //   if(n.status === 'canceled') continue
-  //   let c = await Stripe.subscriptionSchedules.cancel(n.id)
-  //   console.log('schedule canceled',c.id, c.status)
-  //   await delay(100)
-  // }
+  
+  const subscriptionSchedule = await Stripe.subscriptionSchedules.list()
+  console.log('subscriptionSchedule/count'  ,subscriptionSchedule.data.length)
+  for(const n of subscriptionSchedule.data){
+    if(n.status === 'canceled') continue
+    let c = await Stripe.subscriptionSchedules.cancel(n.id)
+    console.log('schedule canceled',c.id, c.status)
+    await delay(100)
+  }
 
   // cancel one schedule
-  const c = await Stripe.subscriptionSchedules.cancel('sub_sched_1NqYKhDo67vHA3BFKfVZRREa')
+ // const c = await Stripe.subscriptionSchedules.cancel('sub_sched_1NqYKhDo67vHA3BFKfVZRREa')
 }
 
 cancelSubSchedules()

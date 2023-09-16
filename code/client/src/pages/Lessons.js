@@ -35,10 +35,7 @@ const Lessons = (props) => {
   //Load sessions info.
   useEffect(() => {
     let items = [];
-    let session = new Date();
-    if (sessions.length > 3) {
-      return;
-    }
+    let session = new Date(); 
     session.setDate(session.getDate() + 9);
     items.push(formatSession(0, "first", session, "3:00 p.m."));
 

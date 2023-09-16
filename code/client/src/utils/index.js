@@ -1,5 +1,7 @@
 import { BASE_URL } from '../constants'
 
+import moment from 'moment'
+
 export const urlPath = (Path) => {
   if (BASE_URL) {
     return new URL(Path, BASE_URL).toString()
@@ -99,9 +101,23 @@ export const formatSession = (index, id, session, time) => {
   date = `${date} ${months[session.getMonth()]}`;
   let title = `${date} ${time}`;
   let type = `${id}_lesson`;
-  return { index, id, title, date, time, selected: "", type, timestamp: session.getTime() };
-};
 
+  // now we need to set the correct time for timestamp!  haha
+  let timestamp = session.getTime()
+  const outputDateFormat = 'DD-MM-YYYY';
+  if(time==='3:00 p.m.') {
+
+    timestamp = moment(session.getTime()).set({hour:15,minute:0,second:0,millisecond:0}).valueOf()
+  }
+  if(time==='4:00 p.m.') {
+    timestamp=  moment(session.getTime()).set({hour:16,minute:0,second:0,millisecond:0}).valueOf()
+  }
+  if(time==='5:00 p.m.') {
+    timestamp = moment(session.getTime()).set({hour:17,minute:0,second:0,millisecond:0}).valueOf()
+  }
+
+  return { index, id, title, date, time, selected: "", type, timestamp };
+};
 
 
 
