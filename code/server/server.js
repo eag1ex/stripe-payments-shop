@@ -29,7 +29,7 @@ const ejs = require('ejs')
 const fs = require('fs')
 const { apiVersion, clientDir } = require('./config')
 
-const { createSubSchedule,cancelCustomerSubscriptions } = require('./libs/schedules')
+const { createSubSchedule,cancelCustomerSubscriptions,deleteSubscriptions } = require('./libs/schedules')
 const {webhookInvoice} = require('./libs/webhooks')
 
 /** @type {Stripe} */
@@ -186,6 +186,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
     // it is unclear which subscription schedule to cancel here
     await cancelCustomerSubscriptions(stripe, rf.customer)
+    await deleteSubscriptions(stripe, rf.customer)
 
   }
 
@@ -194,6 +195,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     const cus = data.object
     // cancel subscription schedule
     await cancelCustomerSubscriptions(stripe, cus.id)
+    await deleteSubscriptions(stripe, cus.id)
   }
 
 

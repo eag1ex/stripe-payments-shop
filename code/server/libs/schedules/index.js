@@ -5,6 +5,7 @@
  * @typedef {import('../../types').Customer.LessonSession} LessonSession
  */
 
+const { delay } = require('../../utils')
 const { paymentIntentCreateParams, scheduleRecurrence } = require('../../config')
 const moment = require('moment')
 
@@ -155,6 +156,21 @@ exports.cancelCustomerSubscriptions = async (stripe, customerId) => {
   return false
 }
 
+/**
+ * Delete subscriptions associated with a customer
+ * @param {Stripe} stripe
+ * @param {*} customerId 
+ */
+exports.deleteSubscriptions=async (stripe,customerId)=>{
+  const subscriptions = await stripe.subscriptions.list({limit:1000})
+  console.log('subscriptions',subscriptions.data.length)
+  for(const n of subscriptions.data){
+   // if(n.status === 'canceled') continue
+    let c = await stripe.subscriptions.del(n.id)
+    console.log('subscription deleted',c.id, c.status)
+    await delay(100)
+  }
+}
 
 
 

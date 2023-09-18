@@ -255,7 +255,7 @@ async function cancelSubSchedules(){
  // const c = await Stripe.subscriptionSchedules.cancel('sub_sched_1NqYKhDo67vHA3BFKfVZRREa')
 }
 
-cancelSubSchedules()
+//cancelSubSchedules()
 
 
 
@@ -283,3 +283,30 @@ async function customerPaymentMethod() {
 
 }
 //customerPaymentMethod()
+
+
+async function deleteInvoices(){
+  const invoices = await Stripe.invoices.list({limit:1000})
+  console.log('invoices',invoices.data.length)
+  for(const n of invoices.data){
+   // if(n.status === 'paid') continue
+    let c = await Stripe.invoices.del(n.id)
+    console.log('invoice deleted',c.id, c.status)
+    await delay(100)
+  }
+}
+//deleteInvoices()
+
+async function deleteSubscriptions(){
+  const subscriptions = await Stripe.subscriptions.list({limit:1000})
+  console.log('subscriptions',subscriptions.data.length)
+  for(const n of subscriptions.data){
+   // if(n.status === 'canceled') continue
+    let c = await Stripe.subscriptions.del(n.id)
+    console.log('subscription deleted',c.id, c.status)
+    await delay(100)
+  }
+}
+//deleteSubscriptions()
+
+

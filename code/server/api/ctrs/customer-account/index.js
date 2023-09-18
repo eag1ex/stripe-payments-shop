@@ -111,42 +111,9 @@ exports.deleteCustomerAccount =
       })
     }
 
-    // stripe.customers.listPaymentMethods(customer_id,{type:'card',expand:['data.customer']})
-    // const customer = await stripe.customers.retrieve(customer_id,{expand:['invoice_settings.default_payment_method']})
-    // customer.
+ 
   }
- // Milestone 3: '/delete-account'
-  // Deletes a customer object if there are no uncaptured payment intents for them.
-  //
-  // Parameters:
-  //   customer_id: the id of the customer to delete
-  //
-  // Example request
-  //   curl -X POST http://localhost:4242/delete-account/:customer_id \
-  //
-  // Returns 1 of 3 responses:
-  // If the customer had no uncaptured charges and was successfully deleted returns the response:
-  //   {
-  //        deleted: true
-  //   }
-  //
-  // If the customer had uncaptured payment intents, return a list of the payment intent ids:
-  //   {
-  //     uncaptured_payments: ids of any uncaptured payment intents
-  //   }
-  //
-  // If there was an error:
-  //  {
-  //    error: {
-  //        code: e.error.code,
-  //        message: e.error.message
-  //      }
-  //  }
-  //
-
-
-
-
+ 
 
 /**
  * @GET
@@ -174,6 +141,7 @@ exports.getCustomerPaymentMethod =
       res.status(200).send({
         ...customerPayment,
       })
+      
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err

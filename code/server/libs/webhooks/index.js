@@ -1,4 +1,15 @@
 /** @typedef {import('stripe').Stripe.Invoice} Invoice*/
+/** @typedef {import('stripe').Stripe} Stripe*/
+
+const moment = require('moment')
+
+/**
+ * 
+ * @param {Stripe} stripe 
+ * @param {*} object 
+ * @param {*} eventType 
+ * @returns 
+ */
 
 exports.webhookInvoice = async (stripe, object, eventType) => {
   // try to manually invoice customer if its due
@@ -52,6 +63,7 @@ exports.webhookInvoice = async (stripe, object, eventType) => {
             amount: Number(inv.subscription_details.metadata.amount_capturable),
             currency: inv.currency,
             confirm: false,
+           // application_fee_amount:123,
             receipt_email: paymentMethod.customer.email,
             customer: inv.customer,
             description: inv.description,

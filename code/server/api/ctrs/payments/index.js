@@ -1,9 +1,9 @@
-// @ts-nocheck
 
 /** @typedef {import('stripe').Stripe} Stripe */
 /** @typedef {import('stripe').Stripe.errors.StripeAPIError} StripeAPIError */
 /** @typedef {import('stripe').Stripe.Customer} StripeCustomer */
 /** @typedef {import('express').Request} Request */
+/** @typedef {import('express').Response} Response */
 /** @typedef {import('../../../types').Customer.Metadata} CustomerMetadata */
 
 const moment = require('moment')
@@ -63,10 +63,8 @@ exports.refundLesson =
         error:{
           message: "missing payment_intent_id"
         }
-       
       });
     }
-
 
     try {
 
@@ -95,7 +93,7 @@ exports.refundLesson =
          // cancel any existing payment intents, and including subscription/type auth_pending_payment
          // needed for initial payment hold
         if (auth_pending_payment.length) {
-          for (const n of piList) {
+          for (const n of auth_pending_payment) {
             await stripe.paymentIntents.cancel(n.id)
           }
         }
@@ -174,35 +172,6 @@ exports.refundLesson =
     }
   };
 
-// Milestone 2: '/refund-lesson'
-// Refunds a lesson payment.  Refund the payment from the customer (or cancel the auth
-// if a payment hasn't occurred).
-// Sets the refund reason to 'requested_by_customer'
-//
-// Parameters:
-// payment_intent_id: the payment intent to refund
-// amount: (optional) amount to refund if different than the original payment
-//
-// Example call:
-// curl -X POST http://localhost:4242/refund-lesson \
-//   -d payment_intent_id=pi_XXX \
-//   -d amount=2500
-//
-// Returns
-// If the refund is successfully created returns a JSON response of the format:
-//
-// {
-//   refund: refund.id
-// }
-//
-// If there was an error:
-//  {
-//    error: {
-//        code: e.error.code,
-//        message: e.error.message
-//      }
-//  }
-
 //----------------------------------
 
 /**
@@ -232,14 +201,14 @@ exports.scheduleLesson =
       try {
         // if there are any created prior we should cancel them
         const piList = (await stripe.paymentIntents.list({ customer: customer_id })).data.filter(
-          (n) => (n.status !== 'canceled' && n.status !== 'succeeded') || n.metadata?.type === 'auth_pending_payment',
+          (n) => (n.status !== 'canceled' && n.status !== 'succeeded') && n.metadata?.type !== 'auth_pending_payment',
         )
          // cancel any existing payment intents, and including subscription/type auth_pending_payment
          // needed for initial payment hold
         if (piList.length) {
           for (const n of piList) {
             await stripe.paymentIntents.cancel(n.id)
-            console.log('scheduleLesson','paymentIntent canceled', n.id, n.status, `cus:${customer_id}`)
+            console.log('scheduleLesson','paymentIntent canceled', n.id,n.metadata.type, n.status, `cus:${customer_id}`)
           }
         }
       } catch (err) {}
@@ -258,9 +227,10 @@ exports.scheduleLesson =
       const piCreate = await stripe.paymentIntents.create({
         ...paymentIntentCreateParams,
         amount,
+        application_fee_amount:123,
         description: description.toString(),
         payment_method: paymentMethod.id,
-        metadata: { ...customer.metadata },
+        metadata: { ...customer.metadata, type:'lessons-payment' },
         customer: customer.id,
         receipt_email: customer.email,
         // payment_method_options: {
@@ -392,8 +362,7 @@ exports.completeLessonPayment =
       }
    
       // cancel subscriptions assigned to this customer
-
-      await cancelCustomerSubscriptions(retrievePayment.customer.id)
+      await cancelCustomerSubscriptions(stripe,retrievePayment.customer.id)
 
       return res.status(200).send({
         payment: confirmPayment,
