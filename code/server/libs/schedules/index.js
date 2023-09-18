@@ -15,24 +15,12 @@ const moment = require('moment')
  * @param {*} customerId
  * @param {*} productId
  * @param {LessonSession} metadata
- * @param {string?} description
  * @returns
  */
-exports.createSubSchedule = async (stripe, customerId, productId, metadata, description) => {
+exports.createSubSchedule = async (stripe, customerId, productId,metadata) => {
   try {
-    // one subscription per customer
-    const sub1 = await (await stripe.subscriptionSchedules.list({ customer: customerId })).data.filter(n=>n.status!=='canceled')
-    
-    if (sub1.length > 0) {
-      throw new Error(`subscription already exists, customer:${customerId} product:${productId}`)
-    }
 
-
-    // sep 16
-    // billed end of the month 30th
-    // set anchor to on sa
-
-   
+ 
     // offset subscription for testing
     //  const lessonFutureScheduleDate = (()=>{
     //   try{
@@ -52,43 +40,28 @@ exports.createSubSchedule = async (stripe, customerId, productId, metadata, desc
     
     //  })()
 
-    //  console.log('lessonFutureScheduleDate ??',{
-    //   timestamp:new Date(Number(metadata.timestamp)).toDateString(),
-    //   lessonFutureScheduleDate:moment.unix(lessonFutureScheduleDate).toString(),
-    //  })
 
-     // start subscription 5 days before the lesson
-   //  const startNow = moment.unix(lessonFutureScheduleDate).subtract(5,'days').unix()
-     // moment(Number(metadata.timestamp)).subtract(9,'days').unix(),
-    const sub2 = await stripe.subscriptionSchedules.create({
+    const fiveDaysBeforeLesson = moment(Number(metadata.timestamp)).subtract(5,'days').unix()
+    const sub = await stripe.subscriptionSchedules.create({
       customer: customerId,
-  
-      start_date:'now',//lessonFutureScheduleDate,        
-      end_behavior: 'cancel',
-      
+      start_date:'now',
+      end_behavior: 'release',
       default_settings:{
-       // billing_cycle_anchor:'phase_start',
-        collection_method: 'charge_automatically',
-        // to be adjusted >> https://stripe.com/docs/api/subscription_schedules/create#create_subscription_schedule-default_settings-collection_method
-        //application_fee_percent
+       billing_cycle_anchor:'phase_start',
+        collection_method: 'charge_automatically'
       },
-      // expand: ['data.phases'],
+
       phases: [
         {
          billing_cycle_anchor:'phase_start',
-         // trial:true,
-           //collection_method: 'send_invoice', // send invoice put a hold (i.e. authorize a pending payment)
-         // billing_thresholds: {},
-          ...(description && { description }),
-          // iterations: 1, // run each month for a year
-          // end this phase 5 days before the next one starts
-
-          // main subscription starts "now"
-          // so when this phase ends, the next one starts
-
-          // end this in 10 seconds and start the next
-          //moment.unix(lessonFutureScheduleDate).add(30,'seconds').unix(),
-          end_date:moment().add(30,'seconds').unix(),
+          metadata:{
+            ...metadata,
+            message:'no charge, unit price is 0, phase one',
+            type:'auth_pending_payment',
+            amount_capturable:paymentIntentCreateParams.amount
+          },
+          description:`At 5 days before the scheduled lesson, we'll put a hold (i.e. authorize a pending payment) on the student's card. If this doesn't go through, then we can immediately start booking a new student for our instructor.`,
+          end_date:fiveDaysBeforeLesson,
           currency: 'usd',
           items: [
             {
@@ -110,13 +83,17 @@ exports.createSubSchedule = async (stripe, customerId, productId, metadata, desc
         },
         {
           collection_method: 'charge_automatically', // send invoice put a hold (i.e. authorize a pending payment)
-          billing_cycle_anchor:'phase_start', // bill at start of phase
-         // billing_thresholds: {},
-          ...(description && { description }),
-          iterations: 11, // run each month for a year
-          // end this phase 5 days before the next one starts
-
+          billing_cycle_anchor:'phase_start', 
+         description:`On the morning of the lesson, we capture the payment in full (no refunds if students cancel on the day of schedule)`,
+         iterations: 11,
           currency: 'usd',
+          metadata:{
+            ...metadata,
+            message:'charge automatically, phase two',
+            type:'invoice_and_charge',
+            amount_capturable:paymentIntentCreateParams.amount
+          },
+          //end_date:oneYearSub,
           items: [
             {
               price_data: {
@@ -138,20 +115,12 @@ exports.createSubSchedule = async (stripe, customerId, productId, metadata, desc
       ],
     })
 
-    // // add this subscription schedule id to customer metadata
-    // await stripe.customers.update(customerId, {
-    //   metadata: {
-    //     ...metadata,
-    //     subscription_schedule_id: sub2.id,
-    //   },
-    // })
-
     console.log('[createSubSchedule]', {
-      sub_sched: sub2.id,
-      customer: sub2.customer,
+      sub_sched: sub.id,
+      customer: sub.customer,
       productId: productId,
       amount: paymentIntentCreateParams.amount,
-     // lessonFutureScheduleDate: new Date(lessonFutureScheduleDate).toISOString(),
+
     })
     return true
   } catch (err) {
@@ -160,6 +129,33 @@ exports.createSubSchedule = async (stripe, customerId, productId, metadata, desc
 
   return false
 }
+
+
+/**
+ * Cancel all subscriptions for a customer
+ * @param {Stripe} stripe 
+ * @param {*} customerId 
+
+ */
+exports.cancelCustomerSubscriptions = async (stripe, customerId) => {
+
+  try {
+
+    const subscriptionSchedule = (await stripe.subscriptionSchedules.list({
+      customer: customerId,
+    })).data.filter(n=>n.status!=='canceled')
+
+    for (const n of subscriptionSchedule) {
+      let c = await stripe.subscriptionSchedules.cancel(n.id)
+      console.log('schedule canceled', c.id, c.status, `cus:${customerId}`)
+    }
+    return true
+  } catch (err) {
+    console.log('[cancelCustomerSubscriptions][error]', err.message)
+  }
+  return false
+}
+
 
 
 
@@ -205,7 +201,7 @@ exports.updateSubSchedule = async (stripe, scheduleId, productId, amount) => {
   
     const sub2 = await stripe.subscriptionSchedules.update(scheduleId, {
       // end_behavior:'release',
-      expand: ['phases'],
+      // expand: ['phases'],
       // default_settings:{}, // review do we need set it ?
       phases: [
         {

@@ -16,6 +16,7 @@ const CardCheckoutForm = (props) => {
 
     setStatus('loading')
     try {
+      
       const { setupIntent, error } = await stripe.confirmSetup({
         elements,
         redirect: 'if_required',

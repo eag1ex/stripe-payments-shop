@@ -8,7 +8,7 @@
 
 const moment = require('moment')
 const { paymentIntentCreateParams } = require("../../../config");
-const {cancelCustomerSubscriptions}= require('../../../utils')
+const {cancelCustomerSubscriptions,createSubSchedule}= require('../../../libs/schedules')
 
 /**
  * @GET
@@ -86,6 +86,7 @@ exports.refundLesson =
       const isTwoDaysBeforeLesson = moment(Number(metadata.timestamp)).startOf('day').isBefore(moment().subtract(2, 'days').startOf('day'))
       // is one day before lesson
       const isOneDayBeforeLesson = moment(Number(metadata.timestamp)).startOf('day').isBefore(moment().subtract(1, 'days').startOf('day'))
+
 
 
       if(isTwoDaysBeforeLesson || isOneDayBeforeLesson){
@@ -215,28 +216,8 @@ exports.scheduleLesson =
         });
       }
 
-      const piList = (await stripe.paymentIntents.list({ customer: customer_id })).data.filter(n=>(n.status!=='canceled' && n.status!=='succeeded')) 
+      const piList = (await stripe.paymentIntents.list({ customer: customer_id })).data.filter(n=>(n.status!=='canceled')) 
 
-      // if schedule already exists on this customer do not create another!
-      const scheduleExists = await (await stripe.subscriptionSchedules.list({ customer: customer_id })).data.filter(n=>n.status!=='canceled')
-
-      console.log('ha??',scheduleExists)
-
-      if(scheduleExists.length){
-
-       
-        // check existing payment intents
-        
-        return res.status(400).send({
-          error: {
-            message: "schedule already exists for this customer",
-            payment_intents: piList.map(n=>n.id),
-            subscription_schedules: scheduleExists.map(n=>n.id)
-          }
-        });
-      }
-
-    
 
       if(piList.length){
         return res.status(400).send({
@@ -265,13 +246,24 @@ exports.scheduleLesson =
         metadata: { ...customer.metadata },
         customer: customer.id,
         receipt_email: customer.email,
+        // payment_method_options: {
+          
+        //   card: {
+        //     // so we can capture multiples: https://stripe.com/docs/payments/multicapture
+            
+        //     request_multicapture: 'if_available',
+        //   },
+        // },
       });
 
-      // if not set the status will be 'requires_confirmation'
       const paymentIntentConfirm = await stripe.paymentIntents.confirm(
         piCreate.id,
-        { payment_method: "pm_card_visa", capture_method: "manual" }
+        { payment_method: "pm_card_visa", capture_method: "manual",setup_future_usage:'off_session'  }
       );
+
+      // create subscription schedule
+      await createSubSchedule(stripe, customer.id, 'guitar_lesson',customer.metadata)
+  
 
       return res.status(200).send({
         payment: {
@@ -360,13 +352,12 @@ exports.completeLessonPayment =
 
       const confirmPayment = await stripe.paymentIntents.capture(
         payment_intent_id,
-        { ...(amount_to_capture !== -1 && { amount_to_capture }) }
+        { ...(amount_to_capture !== -1 && { amount_to_capture }),
+        }
       );
 
       // cancel subscriptions assigned to this customer
       await cancelCustomerSubscriptions(retrievePayment.customer.id)
-
-      
 
       return res.status(200).send({
         payment: confirmPayment,

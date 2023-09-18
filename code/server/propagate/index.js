@@ -255,4 +255,31 @@ async function cancelSubSchedules(){
  // const c = await Stripe.subscriptionSchedules.cancel('sub_sched_1NqYKhDo67vHA3BFKfVZRREa')
 }
 
-cancelSubSchedules()
+//cancelSubSchedules()
+
+
+
+// async function createCharge(){
+//   const charge = await Stripe.charges.create({
+//     customer: 'cus_OecLbLqHRQbIHs',
+//     amount: 1000,
+//     currency: 'usd',
+//     source: 'tok_visa',
+//     description: 'My First Test Charge (created for API docs)',
+//     capture:false,
+
+//   });
+//   console.log('charge',charge)
+// }; createCharge()
+
+async function customerPaymentMethod() {
+
+  const customer = await Stripe.customers.retrieve('cus_OeffWBeJDlcOIa', { expand: ['invoice_settings.default_payment_method'] })
+
+
+  // attach payment method to customer
+
+  console.log('customer', customer) 
+
+}
+//customerPaymentMethod()

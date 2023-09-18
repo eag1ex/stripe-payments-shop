@@ -41,6 +41,7 @@ exports.deleteCustomerAccount =
 
     try {
 
+
       // customer exists ?
       const isDeleted = await stripe.customers.retrieve(customer_id)
       if(isDeleted.deleted) return res.status(200).send({ deleted: true })

@@ -9,7 +9,7 @@
  * @type {PriceScheduleRecurrence | ProductScheduleRecurrence}
  */
 exports.scheduleRecurrence = {
-  interval: 'day',
+  interval: 'month',
   interval_count: 1,
 }
 
@@ -18,6 +18,7 @@ exports.scheduleRecurrence = {
 /** @type {PaymentIntentCreateParams}  */
 exports.paymentIntentCreateParams = {
   capture_method: 'manual',
+  // default amount we want to charge for lesson
   amount: 50000, // $500.00
   currency: 'usd',
   payment_method_types: ['card'],
