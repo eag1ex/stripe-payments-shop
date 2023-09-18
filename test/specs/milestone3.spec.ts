@@ -26,7 +26,6 @@ test.describe('Updating account details', () => {
     customerCreated = true;
   });
 
-  // PASS
   test('Should Load and Display the Account Details:5.1.1', async ({ page, request, browser }) => {
 
     test.skip(!customerCreated, "If customer does not exist then test will fail.")
@@ -46,7 +45,7 @@ test.describe('Updating account details', () => {
 
   });
 
-  // PASS
+
   test('Should allow Customer to Update Card Data without filling Name and EmailId:5.1.3', async ({ page, browser }) => {
     test.skip(!customerCreated, "If customer does not exist then test will fail.")
 
@@ -72,7 +71,6 @@ test.describe('Updating account details', () => {
 
   });
 
-  // PASS
   test('Should not allow usage of existing Customer Email ID while Updating Account Info:5.1.4', async ({ page }) => {
     test.skip(!customerCreated, "If customer does not exist then test will fail.")
 
@@ -96,7 +94,6 @@ test.describe('Updating account details', () => {
 
   });
 
-  // PASS
   test('Should attach new Payment Method and Delete old one after Card Update:5.1.5', async ({ page, request }) => {
     test.skip(!customerCreated, "If customer does not exist then test will fail.")
     const newCardNumber = '5555 5555 5555 4444';
@@ -125,7 +122,6 @@ test.describe('Updating account details', () => {
     expect(newPaymentMethod.data[0].card.last4).not.toEqual(oldPaymentMethod.data[0].card.last4);
   });
 
-  // PASS
   test('Should show Error Message if Invalid Card is used while Updating Account Info:5.1.6', async ({ page }) => {
 
     test.skip(!customerCreated, "If customer does not exist then test will fail.")
@@ -145,7 +141,6 @@ test.describe('Updating account details', () => {
 
   });
 
-  // PASS
   test('Should show Error Message if Invalid 3DS Card is used while Updating Account Info:5.1.7', async ({ page }) => {
 
     test.skip(!customerCreated, "If customer does not exist then test will fail.")
@@ -174,8 +169,6 @@ test.describe('Updating account details', () => {
 
   });
 
-
-  //PASS
   test('Should allow Customer to Successfully Update Payment after Card Decline:5.1.8', async ({ page }) => {
 
     test.skip(!customerCreated, "If customer does not exist then test will fail.")
@@ -270,12 +263,12 @@ test.describe('Deleting customers', () => {
     }
     scheduleLessonResponse = await serverRequest(request, 'POST', 'schedule-lesson', scheduleLessonData);
 
+
     const data = {
       payment_intent_id: scheduleLessonResponse.payment.id,
       amount: '123'
     }
-    const  completed = await serverRequest(request, 'POST', 'complete-lesson-payment', data);
-    console.log('calling completed',customerId, completed)
+    await serverRequest(request, 'POST', 'complete-lesson-payment', data);
 
     const response = await serverRequest(request, 'POST', `delete-account/${customerId}`);
     console.log(`Response from POST /delete-account/:id : ${JSON.stringify(response)}`);

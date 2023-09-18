@@ -26,7 +26,6 @@ exports.lessonRefunds =
     const { refundId } = req.params;
     try {
       const refund = await stripe.refunds.retrieve(refundId);
-      console.log("[refunds]", refund);
       return res.status(200).send({
         amount: refund.amount,
       });

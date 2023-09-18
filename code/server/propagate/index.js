@@ -30,7 +30,7 @@ function listCustomersDelete() {
   });
 } //
 
-listCustomersDelete();
+//listCustomersDelete();
 
 async function createPriceSession() {
   //   const product = await Stripe.products.create({

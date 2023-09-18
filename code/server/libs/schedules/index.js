@@ -120,7 +120,6 @@ exports.createSubSchedule = async (stripe, customerId, productId,metadata) => {
       customer: sub.customer,
       productId: productId,
       amount: paymentIntentCreateParams.amount,
-
     })
     return true
   } catch (err) {
@@ -159,88 +158,88 @@ exports.cancelCustomerSubscriptions = async (stripe, customerId) => {
 
 
 
-/**
- * To update an existing we use customer id and product id, each customer can only have one subscription
- * @param {Stripe} stripe
- * @param {*} scheduleId
- * @param {*} productId
- * @param {number} amount
+// /**
+//  * To update an existing we use customer id and product id, each customer can only have one subscription
+//  * @param {Stripe} stripe
+//  * @param {*} scheduleId
+//  * @param {*} productId
+//  * @param {number} amount
 
- */
-exports.updateSubSchedule = async (stripe, scheduleId, productId, amount) => {
-  let id
-  try {
-    // const sub1 =( await stripe.subscriptionSchedules.list({ customer: customerId })).data.filter(n=>n.status!=='canceled')
+//  */
+// exports.updateSubSchedule = async (stripe, scheduleId, productId, amount) => {
+//   let id
+//   try {
+//     // const sub1 =( await stripe.subscriptionSchedules.list({ customer: customerId })).data.filter(n=>n.status!=='canceled')
 
-    // if (!sub1.length) {
-    //   throw new Error(
-    //     `[updateSubSchedule], no available subscription found for customer:${customerId}, product:${productId}`,
-    //   )
-    // }
+//     // if (!sub1.length) {
+//     //   throw new Error(
+//     //     `[updateSubSchedule], no available subscription found for customer:${customerId}, product:${productId}`,
+//     //   )
+//     // }
 
-    // //REVIEW  there is no business logic on how we should handle multiple subscriptions for a customer
-    // // SO FOR NOW WE USE THE FIRST ONE
-    // const sub = sub1[0]
-    // id = sub.id
-    // const available = sub.status === 'active' || sub.status === 'not_started'
+//     // //REVIEW  there is no business logic on how we should handle multiple subscriptions for a customer
+//     // // SO FOR NOW WE USE THE FIRST ONE
+//     // const sub = sub1[0]
+//     // id = sub.id
+//     // const available = sub.status === 'active' || sub.status === 'not_started'
 
-    // if (!available) {
-    //   throw new Error(
-    //     `[updateSubSchedule],status:${sub.status}, not available for customer:${customerId}, product:${productId}`,
-    //   )
-    //}
-  //   "current_phase": {
-  //     "end_date": 1697363669,
-  //     "start_date": 1694771669
-  // },
+//     // if (!available) {
+//     //   throw new Error(
+//     //     `[updateSubSchedule],status:${sub.status}, not available for customer:${customerId}, product:${productId}`,
+//     //   )
+//     //}
+//   //   "current_phase": {
+//   //     "end_date": 1697363669,
+//   //     "start_date": 1694771669
+//   // },
 
-  // const startEnd = {
-  //   ...(sub.status === 'active' && {end_date:sub.current_phase.end_date}),
-  //   ...(sub.status === 'not_started' && {start_date:sub.current_phase.start_date}),
-  // }
+//   // const startEnd = {
+//   //   ...(sub.status === 'active' && {end_date:sub.current_phase.end_date}),
+//   //   ...(sub.status === 'not_started' && {start_date:sub.current_phase.start_date}),
+//   // }
   
-    const sub2 = await stripe.subscriptionSchedules.update(scheduleId, {
-      // end_behavior:'release',
-      // expand: ['phases'],
-      // default_settings:{}, // review do we need set it ?
-      phases: [
-        {
-          // collection_method: 'charge_automatically',
-          // billing_thresholds:'',
-          //...(description && {description}),
-          //  iterations: 12, // run each month for a year
-          //   currency:'usd',
-          //end_date:'now',
-          //   start_date: moment(Number(startDate)).unix(),
+//     const sub2 = await stripe.subscriptionSchedules.update(scheduleId, {
+//       // end_behavior:'release',
+//       // expand: ['phases'],
+//       // default_settings:{}, // review do we need set it ?
+//       phases: [
+//         {
+//           // collection_method: 'charge_automatically',
+//           // billing_thresholds:'',
+//           //...(description && {description}),
+//           //  iterations: 12, // run each month for a year
+//           //   currency:'usd',
+//           //end_date:'now',
+//           //   start_date: moment(Number(startDate)).unix(),
 
-          //start_date:sub.current_phase.start_date,
-          items: [
-            {
-              price_data: {
-                unit_amount: amount,
-                currency: 'usd',
-                product: productId,
-                recurring: {
-                  interval: 'month',
-                  interval_count: 1,
-                },
-              },
-              quantity: 1,
-            },
-          ],
-        },
-      ],
-    })
+//           //start_date:sub.current_phase.start_date,
+//           items: [
+//             {
+//               price_data: {
+//                 unit_amount: amount,
+//                 currency: 'usd',
+//                 product: productId,
+//                 recurring: {
+//                   interval: 'month',
+//                   interval_count: 1,
+//                 },
+//               },
+//               quantity: 1,
+//             },
+//           ],
+//         },
+//       ],
+//     })
 
-    console.log('[updateSubSchedule]', {
-      sub_sched: sub2.id,
-      customer: sub2.customer,
-      productId: productId,
-      amount: amount
-    })
-    return true
-  } catch (err) {
-    console.log('[updateSubSchedule][error]',id, err.message)
-  }
-  return false
-}
+//     console.log('[updateSubSchedule]', {
+//       sub_sched: sub2.id,
+//       customer: sub2.customer,
+//       productId: productId,
+//       amount: amount
+//     })
+//     return true
+//   } catch (err) {
+//     console.log('[updateSubSchedule][error]',id, err.message)
+//   }
+//   return false
+// }

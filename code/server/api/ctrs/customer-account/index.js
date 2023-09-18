@@ -177,7 +177,7 @@ exports.getCustomerPaymentMethod =
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err
-      console.log('[GET][getCustomerPaymentMethod][error]', error)
+      console.error('[GET][getCustomerPaymentMethod][error]', error.message)
       return res.status(400).send({ error: { message: error.message, code: error.code } })
     }
   }
