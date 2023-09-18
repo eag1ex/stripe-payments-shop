@@ -56,15 +56,12 @@ const CardSetupForm = (props) => {
                   /** @type {CardSetupIntentConfirmation} */
                   const r = result
 
-                  console.log('eventType/type', eventType, status, result)
-
                   // customerUpdateConfirmation
                   if (eventType !== type) return
 
                   if (eventType === 'create') {
                     if (status === 'success') {
                       setBillingData(r)
-                      console.log('success', r)
                     }
 
                     if (status === 'pm-error') {

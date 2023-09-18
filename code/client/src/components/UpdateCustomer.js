@@ -117,7 +117,6 @@ const UpdateCustomer = ({ customer, customerName, customerEmail, customerUpdateC
                     onSuccessfulConfirmation={(type, status, resp) => {
                       if (type !== 'update') return
 
-                      console.log('customerUpdate!!!', status, resp)
                       /** @type {CardSetupIntentConfirmation} */
                       const r = resp
 

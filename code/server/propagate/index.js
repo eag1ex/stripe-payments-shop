@@ -255,7 +255,7 @@ async function cancelSubSchedules(){
  // const c = await Stripe.subscriptionSchedules.cancel('sub_sched_1NqYKhDo67vHA3BFKfVZRREa')
 }
 
-//cancelSubSchedules()
+cancelSubSchedules()
 
 
 

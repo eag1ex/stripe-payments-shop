@@ -53,9 +53,22 @@ exports.deleteCustomerAccount =
         return res.status(200).send({ deleted: del })
       }
 
-      const piIncomplete = piList.data.filter((n) => n.status !== 'succeeded' /*&& n.status !== 'canceled' */)
+     
+      let piIncomplete = piList.data.filter((n) => (n.status !== 'succeeded' && n.status !== 'canceled') || n.metadata?.type === 'auth_pending_payment')
+ 
+      // check for any auth pending as they do not have charge amount associated with them
+      for(let inx = 0; inx < piIncomplete.length; inx++ ){
+        let item = piIncomplete[inx]
+        if(item.metadata?.type === 'auth_pending_payment' && item.status !== 'canceled') {
+          // cancel payment intent
+           await stripe.paymentIntents.cancel(item.id)
+           piIncomplete.splice(inx,1)
+        }
+      }
 
-      // If the student has any uncaptured payments, then it returns a list of Payment Intent IDs.
+      piIncomplete = piIncomplete.filter((n) =>n.status !== 'canceled')
+
+      // If the student has any uncultured payments, then it returns a list of Payment Intent IDs.
       if(piIncomplete.length){
         return res.status(200).send({uncaptured_payments:piIncomplete.map(n=>n.id)})
       }

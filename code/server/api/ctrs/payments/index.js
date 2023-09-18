@@ -88,6 +88,20 @@ exports.refundLesson =
       const isOneDayBeforeLesson = moment(Number(metadata.timestamp)).startOf('day').isBefore(moment().subtract(1, 'days').startOf('day'))
 
 
+      try {
+        // if there are any created prior we should cancel them
+        const auth_pending_payment = (await stripe.paymentIntents.list({ customer: pi.customer.id })).data.filter(
+          (n) => n.metadata?.type === 'auth_pending_payment',
+        )
+         // cancel any existing payment intents, and including subscription/type auth_pending_payment
+         // needed for initial payment hold
+        if (auth_pending_payment.length) {
+          for (const n of piList) {
+            await stripe.paymentIntents.cancel(n.id)
+          }
+        }
+      } catch (err) {}
+
 
       if(isTwoDaysBeforeLesson || isOneDayBeforeLesson){
         console.log('Number(pi.amount) - (Number(pi.amount)/2',pi.amount,Number(pi.amount) - (Number(pi.amount)/2))
@@ -216,17 +230,21 @@ exports.scheduleLesson =
         });
       }
 
-      const piList = (await stripe.paymentIntents.list({ customer: customer_id })).data.filter(n=>(n.status!=='canceled')) 
-
-
-      if(piList.length){
-        return res.status(400).send({
-          error: {
-            message: `This customer has existing "Payment Intents" with status: ${JSON.stringify(piList.map(n=>n.status))}`,
-            payment_intents: piList.map(n=>n.id)
+      try {
+        // if there are any created prior we should cancel them
+        const piList = (await stripe.paymentIntents.list({ customer: customer_id })).data.filter(
+          (n) => (n.status !== 'canceled' && n.status !== 'succeeded') || n.metadata?.type === 'auth_pending_payment',
+        )
+         // cancel any existing payment intents, and including subscription/type auth_pending_payment
+         // needed for initial payment hold
+        if (piList.length) {
+          for (const n of piList) {
+            await stripe.paymentIntents.cancel(n.id)
+            console.log('scheduleLesson','paymentIntent canceled', n.id, n.status, `cus:${customer_id}`)
           }
-        });
-      }
+        }
+      } catch (err) {}
+ 
 
       const paymentMethod = (
         await stripe.customers.listPaymentMethods(customer_id, {
@@ -270,6 +288,7 @@ exports.scheduleLesson =
           ...paymentIntentConfirm,
         },
       });
+
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err;
@@ -353,10 +372,28 @@ exports.completeLessonPayment =
       const confirmPayment = await stripe.paymentIntents.capture(
         payment_intent_id,
         { ...(amount_to_capture !== -1 && { amount_to_capture }),
+        //expand: ["customer"]
         }
       );
 
+      // remove  auth_pending_payment 
+      const auth_pending_payments = (
+        await stripe.paymentIntents.list({ customer: retrievePayment.customer.i })
+      ).data.filter((n) => n.metadata?.type === 'auth_pending_payment')
+      for (const pending of auth_pending_payments) {
+        // cancel any existing payment intents
+        if (pending.status === 'canceled') continue
+        await stripe.paymentIntents.cancel(pending.id)
+        console.log(
+          'completeLessonPayment/auth_pending_payments',
+          'canceled',
+          pending.id,
+          pending.status
+        )
+      }
+   
       // cancel subscriptions assigned to this customer
+
       await cancelCustomerSubscriptions(retrievePayment.customer.id)
 
       return res.status(200).send({
@@ -366,7 +403,7 @@ exports.completeLessonPayment =
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err;
-      console.error("[completeLessonPayment][error]", error.message);
+      console.error("[completeLessonPayment][error]", error);
       return res.status(400).send({
         error: {
           message: error.raw?.message || "generic_error_check_logs",

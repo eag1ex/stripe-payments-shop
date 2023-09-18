@@ -35,7 +35,7 @@ const RegistrationForm = (props) => {
   const appearance = {
     labels: 'floating',
   }
-  console.log('session',session)
+
   const handleChange = async (value, field) => {
     if (field === 'learnerEmail') setLearnerEmail(value)
     if (field === 'learnerName') setLearnerName(value)
@@ -80,7 +80,6 @@ const RegistrationForm = (props) => {
           customerId: n.customerId,
         })
 
-        console.log('[RegistrationForm][createCustomer]', n)
         setProcessing(false)
         setCustomer({
           secrets: n.secrets,

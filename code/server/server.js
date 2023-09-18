@@ -30,7 +30,7 @@ const fs = require('fs')
 const { apiVersion, clientDir } = require('./config')
 
 const { createSubSchedule,cancelCustomerSubscriptions } = require('./libs/schedules')
-
+const {webhookInvoice} = require('./libs/webhooks')
 
 /** @type {Stripe} */
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, { apiVersion })
@@ -130,9 +130,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     // }
   }
 
-  // if(eventType === 'customer.subscription.created'){
-  //   console.log('[webhook][object][id]', data?.object)
-  // }
+  if(eventType === 'customer.subscription.created'){}
 
   if (eventType === 'payment_method.attached') {
     // update customer name and email via webhook instead of using: /account-update/:customer_id
@@ -199,125 +197,18 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   }
 
 
-  if (eventType === 'customer.subscription.created') {
-    
-  }
+  if (eventType === 'customer.subscription.created') { }
    
-  if (eventType === 'customer.subscription.updated') {
+  if (eventType === 'customer.subscription.updated') {}
 
-   
-  }
-
-  // Use the Payment Intents API to initiate a new payment instead of using this method. Confirmation of the PaymentIntent creates the Charge object used to request payment, so this method is limited to legacy integrations.
 
   // try to manually invoice customer if its due
   if (eventType === 'invoice.created') {
 
     /** @type {Invoice} */
     const inv = data.object
+    await webhookInvoice(stripe, inv,eventType)
 
-    // invoice Placing a hold on a payment
-    // https://stripe.com/docs/billing/invoices/subscription#placing-a-hold-on-a-payment
-    console.log('[webhook][object][date] ', moment.unix(inv.created).toString())
-
-    const { type } = inv?.subscription_details?.metadata;
-   
-    if (type === 'invoice_and_charge') {
-
-      console.log('invoice_and_charge/subscription_details',inv?.subscription_details)
-    
-      // const requires_capture = paymentIntents.data.filter(
-      //   (n) => n.status === 'requires_capture',
-      // );
-
-      // if (requires_capture.length) {
-      //   // capture payment intent
-      //   const paymentIntent = await stripe.paymentIntents.capture(requires_capture[0].id, {
-      //     amount_to_capture: inv.amount_due,
-      //   })
-      //   console.log('[invoice_and_charge][paymentIntent]', paymentIntent.id)
-      // }
-      return
-    }
-
-      // retrieve customer
-      const customer = (async () => {
-        try {
-          const cus = await stripe.customers.retrieve(inv.customer)
-          if (cus.deleted) throw Error(`customer deleted: ${inv.customer}`)
-          return cus
-        } catch (err) {}
-      })()
-      
-      if(!customer) return
-
-      const paymentMethod = await(async()=>{
-        try{
-          return (await stripe.paymentMethods.list({
-            customer: inv.customer,
-            type: 'card',
-            expand: ['data.customer'],
-          })).data[0]
-        }catch(er){
-          console.error('[paymentMethods][error]', er)
-        }
-      })()
-
-
-      // on 5th day
-      if (type === 'auth_pending_payment') {
-
-        // before the due data,  create new payment intent and delete the old one
-        // then only authorize the payment with the whole billable amount
-        // if the student decides to cancel 2 days before the due date, we use the new payment intent that was created on 5 days before subscription
-
-        // try and remove old intents belonging to the customer
-
-        // try {
-        //   const oldIntents = paymentIntents.data.filter(
-        //     (n) => n.status !== 'succeeded' && n.status !== 'canceled',
-        //   )
-
-        //   for (const n of oldIntents) {
-        //     await stripe.paymentIntents.cancel(n.id)
-        //    // console.log('[oldIntents][canceled]', n.id)
-        //   }
-
-        // } catch (err) {}
- 
-        try {
- 
-          // create new intent with capture_method:manual
-          const piCreate = await stripe.paymentIntents.create({
-            amount: Number(inv.subscription_details.metadata.amount_capturable),
-            currency: inv.currency,
-            confirm:false,
-            receipt_email: paymentMethod.customer.email,
-            customer: inv.customer,
-            description: inv.description,
-            payment_method: paymentMethod.id,
-            capture_method: 'manual',
-            setup_future_usage: 'off_session',
-            metadata: {
-              ...paymentMethod.customer.metadata,
-              type,
-              invoice_id: inv.id,
-            },
-          })
-  
-          const paymentIntentConfirm = await stripe.paymentIntents.confirm(piCreate.id, {
-            payment_method: 'pm_card_visa',
-            capture_method: 'manual',
-            setup_future_usage: 'off_session',
-          })
-
-          console.log('[auth_pending_payment][paymentIntentConfirm]', paymentIntentConfirm.id)
-        } catch (err) {
-          console.error('[auth_pending_payment][error]', err)
-        }
-      }
-
- 
   }
 
   if (eventType === 'payment_intent.succeeded') {
