@@ -15,6 +15,8 @@ test.describe('/calculate-lesson-total', () => {
     test.setTimeout(FOUR_MINUTES);
 
     finalLessonTotalResponse = await serverRequest(request, 'GET', 'calculate-lesson-total', undefined, FOUR_MINUTES);
+    
+    console.log('initial/finalLessonTotalResponse/1',finalLessonTotalResponse)
 
     expect(finalLessonTotalResponse.net_total).toBeTruthy();
     expect(finalLessonTotalResponse.fee_total).toBeTruthy();
@@ -39,6 +41,8 @@ test.describe('/calculate-lesson-total', () => {
     const customerId = await page.locator('#customer-id').textContent();
 
     initialLessonTotalResponse = await serverRequest(request, 'GET', 'calculate-lesson-total', undefined, FOUR_MINUTES);
+
+    console.log('initial/finalLessonTotalResponse/2',initialLessonTotalResponse)
 
     const scheduleLessonData = {
       customer_id: customerId,
