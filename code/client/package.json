@@ -13,6 +13,7 @@
     "i18next": "^19.3.4",
     "i18next-browser-languagedetector": "^4.0.2",
     "i18next-xhr-backend": "^3.2.2",
+    "moment": "^2.29.4",
     "react": "^16.13.1",
     "react-bootstrap": "^2.8.0",
     "react-dom": "^16.13.1",
@@ -46,7 +47,9 @@
   },
   "proxy": "http://localhost:4242",
   "devDependencies": {
+    "@types/stripe": "^8.0.417",
+    "eslint": "^8.49.0",
     "http-proxy-middleware": "^2.0.6",
-    "prettier": "^2.0.2"
+    "prettier": "^2.8.8"
   }
 }

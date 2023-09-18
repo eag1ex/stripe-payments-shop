@@ -1,54 +1,65 @@
-import React, { useEffect, useState } from "react";
-import Header from "../components/Header";
-import UpdateCustomer from "../components/UpdateCustomer";
+/**
+ * @typedef {import('../types').CustomerType.Update} CustomerUpdate
+ * @typedef {import('../types').CustomerType.PaymentMethod} CustomerPaymentMethod
+ * @typedef {import('../types').CustomerType.CardSetupIntentConfirmation} CardSetupIntentConfirmation
+ */
 
-import "../css/lessons.scss";
-import { accountUpdate } from "../Services/account";
-import { useLocation } from 'react-router-dom';
-import { useMatch } from "react-router-dom";
-import DocumentTitle from "../components/DocumentTitle";
+import React, { useEffect, useState } from 'react'
+import Header from '../components/Header'
+import UpdateCustomer from '../components/UpdateCustomer'
 
-//Component responsable to update user's info.
+import '../css/lessons.scss'
+import { getCustomer } from '../Services/account'
+import { useMatch } from 'react-router-dom'
+import DocumentTitle from '../components/DocumentTitle'
+import { delCustomerSession, setCustomerSession } from '../utils'
+
 const AccountUpdate = () => {
   DocumentTitle('Account Details')
 
-  const { pathname, hash, key, state } = useLocation();
-  const customerData = state?.customer
   const id = useMatch('/account-update/:id').params.id
+  const [status, setStatus] = useState('initial') // loading, error, success
 
-  const [data, setData] = useState(customerData || null)
+  /** @type {[CustomerPaymentMethod, React.Dispatch<CustomerPaymentMethod>]}  */
+  const [customerData, setCustomerData] = useState(null)
 
-  console.log('[AccountUpdate][route]', id)
-
-  //Get info to load page, User payment information, config API route in package.json "proxy"
   useEffect(() => {
-    if (id){
-      const setup = async () => {
-        // NOTE this is a get request not sure why was it called update, confusing ...
-        const result = await accountUpdate(id);
-        console.log('[AccountUpdate][setup]', result)
-        if (result !== null) {
-          setData(result);
-        }
-      };
-      if (!data?.customer) setup();
+    if (id && status === 'initial') {
+      setStatus('loading')
+      getCustomer(id)
+        .then((r) => {
+          setCustomerData(r)
+          setStatus('success')
+        })
+        .catch((e) => {
+          setStatus('error')
+          delCustomerSession()
+        })
     }
-    
-  }, [id]);
+  }, [id])
 
-  console.log('data.customer', data?.customer)
 
-  const onSuccessfulConfirmation = async (customerId) => {
-    const result = await accountUpdate(id);
-    if (result !== null) {
-      setData(result);
-    }
-  };
+  /**
+   *
+   * @param {*} customerId
+   * @param {CardSetupIntentConfirmation} resp
+   * @returns
+   */
+  const customerUpdateConfirmation = async (customerId, resp) => {
+    if (!resp || !customerId) return
+    // this updates the customer's email and name only
+    const customerDataCopy = { ...customerData }
+    customerDataCopy.customer.email = resp.billing_details.email
+    customerDataCopy.customer.name = resp.billing_details.name
+    customerDataCopy.card = resp.card
+    setCustomerData(JSON.parse(JSON.stringify(customerDataCopy)))
+    setCustomerSession({ name: resp.billing_details.name, email: resp.billing_details.email, customerId })
+  }
 
   return (
     <main className="main-lessons">
       <Header />
-      {!!data?.customer ? (
+      {!!customerData?.customer ? (
         <div>
           <div className="eco-items" id="account-information">
             {
@@ -59,26 +70,28 @@ const AccountUpdate = () => {
             <h5>We have the following card information on file for you: </h5>
             <p>
               Billing Email:&nbsp;&nbsp;
-              <span id="billing-email">{data?.customer?.email}</span>
+              <span id="billing-email">{customerData?.customer?.email}</span>
             </p>
             <p>
               Card Exp Month:&nbsp;&nbsp;
-              <span id="card-exp-month">{data?.card?.exp_month}</span>
+              <span id="card-exp-month">{customerData?.card?.exp_month}</span>
             </p>
             <p>
               Card Exp Year:&nbsp;&nbsp;
-              <span id="card-exp-year">{data?.card?.exp_year}</span>
+              <span id="card-exp-year">{customerData?.card?.exp_year}</span>
             </p>
             <p>
               Card last 4:&nbsp;&nbsp;
-              <span id="card-last4">{data?.card?.last4}</span>
+              <span id="card-last4">{customerData?.card?.last4}</span>
             </p>
           </div>
           <UpdateCustomer
-            customer={data.customer}
-            customerName={data.customer.name}
-            customerEmail={data.customer.email}
-            onSuccessfulConfirmation={onSuccessfulConfirmation}
+            customer={customerData.customer}
+            customerName={customerData.customer.name}
+            customerEmail={customerData.customer.email}
+            customerUpdateConfirmation={(status, resp) => {
+              customerUpdateConfirmation(customerData.id, resp)
+            }}
           />
         </div>
       ) : (
@@ -87,7 +100,7 @@ const AccountUpdate = () => {
         </div>
       )}
     </main>
-  );
-};
+  )
+}
 
-export default AccountUpdate;
+export default AccountUpdate

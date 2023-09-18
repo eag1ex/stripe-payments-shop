@@ -3,6 +3,7 @@
 
 require("dotenv").config({ path: "../.env" });
 
+const moment = require("moment");
 const { apiVersion, clientDir } = require("../config");
 const { delay } = require("../utils");
 
@@ -108,14 +109,21 @@ async function searchPaymentIntent() {
 //searchPaymentIntent();
 
 async function getCustomer() {
-  try {
-    const c = await Stripe.customers.retrieve("abc23");
-    console.log("customer", c);
-  } catch (err) {
-    console.log("err.code", err.code);
-    console.log("err.message", err.message);
-  }
+  // try {
+  //   const c = await Stripe.customers.retrieve("abc23");
+  //   console.log("customer", c);
+  // } catch (err) {
+  //   console.log("err.code", err.code);
+  //   console.log("err.message", err.message);
+  // }
+
+  const c = await Stripe.customers.search({
+    query: `email:'johndoe123@email.com'`,
+  });
+  console.log("customer", c);
 }
+
+//getCustomer();
 
 async function searchCustomer() {
   //  AND status:'requires_confirmation'
@@ -129,8 +137,6 @@ async function searchCustomer() {
   await Stripe.customers.retrieve(customer, { expand: ["pa"] });
 }
 //searchCustomer();
-
-//getCustomer();
 
 async function findPayment() {
   //Stripe.customers.retrievePaymentMethod("cus_OcIvXRDpttFPx0");
@@ -159,3 +165,121 @@ async function retrievePi() {
   console.log("pi", pi);
 }
 //retrievePi();
+
+
+async function createSubSchedule() {
+  // const exists = await Stripe.products.retrieve('test_product')
+  // console.log('exists',exists)
+  // const product = await Stripe.products.create({
+  //   name:'test product',
+  //   id:'test_product',
+  //   default_price_data:{
+  //     currency:'usd',
+  //     unit_amount:1000,
+  //     recurring:{
+  //       interval:'month',
+  //       interval_count:1,
+  //     }
+  //   }
+  // })
+
+  //  const sub2=  await stripe.subscriptionSchedules.update(subId,{
+  const subscriptionSchedule = await Stripe.subscriptionSchedules.update('sub_sched_1NqYKhDo67vHA3BFKfVZRREa',{
+   // customer: 'cus_OdV8wCVl9MQGBP',
+    
+    //start_date:moment(Number(1695972561375)).unix(),//new Date().getSeconds()+2000, //moment().toNow() metadata.timestamp,
+    // end_behavior:'release',
+    // expand: ['phases'],
+    phases: [
+      {
+
+        currency:'usd',
+       // iterations: 1, // or end_date
+        end_date:'now',
+        //start_date:'now',
+        items: [
+          { 
+            price_data:{
+              unit_amount:1,
+              currency:'usd',
+              product: 'test_product',
+              recurring:{
+                interval:'month',
+                interval_count:1,
+              }
+            },
+            metadata:{
+              type:'first_lesson',
+            },
+            quantity: 1,
+          },
+        ]
+      },
+    ],
+  });
+
+
+  console.log('subscriptionSchedule'  ,subscriptionSchedule)
+}
+
+//createSubSchedule()
+
+async function createPrice(){
+
+  const price = await Stripe.prices.create({
+    unit_amount: 2000,
+    currency: 'usd',
+   // recurring: {interval: 'month'},
+    product: 'prod_ObzYq2T2wUiRt9',
+  });
+  console.log('price',price)
+
+  Stripe.prices.update('price_1NqYdvDo67vHA3BFJVei99ac',{
+    
+  })
+};
+
+
+async function cancelSubSchedules(){
+  
+  const subscriptionSchedule = await Stripe.subscriptionSchedules.list()
+  console.log('subscriptionSchedule/count'  ,subscriptionSchedule.data.length)
+  for(const n of subscriptionSchedule.data){
+    if(n.status === 'canceled') continue
+    let c = await Stripe.subscriptionSchedules.cancel(n.id)
+    console.log('schedule canceled',c.id, c.status)
+    await delay(100)
+  }
+
+  // cancel one schedule
+ // const c = await Stripe.subscriptionSchedules.cancel('sub_sched_1NqYKhDo67vHA3BFKfVZRREa')
+}
+
+cancelSubSchedules()
+
+
+
+// async function createCharge(){
+//   const charge = await Stripe.charges.create({
+//     customer: 'cus_OecLbLqHRQbIHs',
+//     amount: 1000,
+//     currency: 'usd',
+//     source: 'tok_visa',
+//     description: 'My First Test Charge (created for API docs)',
+//     capture:false,
+
+//   });
+//   console.log('charge',charge)
+// }; createCharge()
+
+async function customerPaymentMethod() {
+
+  const customer = await Stripe.customers.retrieve('cus_OeffWBeJDlcOIa', { expand: ['invoice_settings.default_payment_method'] })
+
+
+  // attach payment method to customer
+
+  console.log('customer', customer) 
+
+}
+//customerPaymentMethod()

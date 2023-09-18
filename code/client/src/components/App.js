@@ -1,22 +1,20 @@
-import React, { Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { Suspense } from 'react'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 
-import Home from "../pages/Home";
-import Lessons from "../pages/Lessons";
-import AccountUpdate from "../pages/AccountUpdate";
-import Layout from "./Layout";
-import "../css/normalize.scss";
-import "../css/eco-nav.scss";
-import { createBrowserHistory } from 'history';
-
+import Home from '../pages/Home'
+import Lessons from '../pages/Lessons'
+import AccountUpdate from '../pages/AccountUpdate'
+import Layout from './Layout'
+import '../css/normalize.scss'
+import '../css/eco-nav.scss'
+import { createBrowserHistory } from 'history'
 
 const App = () => {
-  const history = createBrowserHistory();
- 
+  const history = createBrowserHistory()
+
   return (
     <React.StrictMode>
       <Suspense fallback="loading">
-      
         {
           // Routes for principal UI sections.
           // Concert Tickets Challenge: /concert
@@ -25,18 +23,16 @@ const App = () => {
         }
         <Router>
           <Routes>
-          <Route path="/" element={<Layout history={history} />}>
-              <Route path="" element={<Home path="/" />} />
+            <Route path="/" element={<Layout history={history} />}>
+              <Route path="" element={<Home />} />
               <Route path="lessons" element={<Lessons history={history} />} />
-              <Route exact path="account-update/:id" element={<AccountUpdate  />} />
+              <Route exact path="account-update/:id" element={<AccountUpdate />} />
             </Route>
-         
-
           </Routes>
         </Router>
       </Suspense>
     </React.StrictMode>
-  );
-};
+  )
+}
 
-export default App;
+export default App

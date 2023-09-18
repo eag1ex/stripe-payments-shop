@@ -4,9 +4,11 @@
 /** @typedef {import('stripe').Stripe.errors.StripeAPIError} StripeAPIError */
 /** @typedef {import('stripe').Stripe.Customer} StripeCustomer */
 /** @typedef {import('express').Request} Request */
-/** @typedef {import('express').Response} Response */
+/** @typedef {import('../../../types').Customer.Metadata} CustomerMetadata */
 
+const moment = require('moment')
 const { paymentIntentCreateParams } = require("../../../config");
+const {cancelCustomerSubscriptions,createSubSchedule}= require('../../../libs/schedules')
 
 /**
  * @GET
@@ -24,7 +26,6 @@ exports.lessonRefunds =
     const { refundId } = req.params;
     try {
       const refund = await stripe.refunds.retrieve(refundId);
-      console.log("[refunds]", refund);
       return res.status(200).send({
         amount: refund.amount,
       });
@@ -41,6 +42,8 @@ exports.lessonRefunds =
   };
 
 /**
+ * 
+ * If a student cancels one or two days before their lesson, we'll capture half of the payment as a late cancellation fee.
  * @POST
  * @api /refund-lesson
  * @param {Stripe} stripe
@@ -57,30 +60,93 @@ exports.refundLesson =
 
     if (!payment_intent_id) {
       return res.status(400).send({
-        error: true,
-        message: "missing payment_intent_id",
+        error:{
+          message: "missing payment_intent_id"
+        }
+       
       });
     }
 
-    try {
-      // check payment status to see if we can do refund or cancel
-      const pi = await stripe.paymentIntents.retrieve(payment_intent_id);
 
+    try {
+
+      // check payment status to see if we can do refund or cancel
+      const pi = await stripe.paymentIntents.retrieve(payment_intent_id,{expand:['customer']});
+
+
+      // check if its 1 or 2 days before lesson and if so charge 50% of lesson
+      /**
+       * @type {CustomerMetadata}
+       */
+      const metadata= pi.metadata
+
+      // we only want to make sure days match not the exec time
+      // is 2 days before lesson
+      const isTwoDaysBeforeLesson = moment(Number(metadata.timestamp)).startOf('day').isBefore(moment().subtract(2, 'days').startOf('day'))
+      // is one day before lesson
+      const isOneDayBeforeLesson = moment(Number(metadata.timestamp)).startOf('day').isBefore(moment().subtract(1, 'days').startOf('day'))
+
+
+      try {
+        // if there are any created prior we should cancel them
+        const auth_pending_payment = (await stripe.paymentIntents.list({ customer: pi.customer.id })).data.filter(
+          (n) => n.metadata?.type === 'auth_pending_payment',
+        )
+         // cancel any existing payment intents, and including subscription/type auth_pending_payment
+         // needed for initial payment hold
+        if (auth_pending_payment.length) {
+          for (const n of piList) {
+            await stripe.paymentIntents.cancel(n.id)
+          }
+        }
+      } catch (err) {}
+
+
+      if(isTwoDaysBeforeLesson || isOneDayBeforeLesson){
+        console.log('Number(pi.amount) - (Number(pi.amount)/2',pi.amount,Number(pi.amount) - (Number(pi.amount)/2))
+
+        // if amount received is different and already set use that 
+        const amount = !!pi.amount_received ? parseInt(pi.amount_received - (pi.amount_received/2)) :  parseInt(pi.amount - (pi.amount/2));
+        if(pi.status === 'requires_capture'){
+          await stripe.paymentIntents.capture(
+            payment_intent_id,
+            { amount_to_capture:amount }
+          );
+        }
+      
+        const refund = await stripe.refunds.create({
+          amount: amount,
+          payment_intent:  pi.id,
+        });
+
+        return res.status(200).send({
+            refund: refund.id,
+            type: "refunded",
+          });
+      }
+  
+      // if we 
       const canCancel = [
         "requires_payment_method",
         "requires_capture",
         "requires_confirmation",
         "processing",
+      
       ].includes(pi.status);
+
+ 
       if (canCancel) {
         const paymentIntent = await stripe.paymentIntents.cancel(pi.id);
 
         return res.status(200).send({
-          refund: paymentIntent.id,
+          refund: paymentIntent.id, 
           type: "canceled",
         });
+
       } else {
-        let refundAmount =
+        // if we already canceled this will throw an error
+        // should this also check is we are capturing a greater amount than the original payment? ???
+        const refundAmount =
           !!amount && pi.amount_capturable !== Number(amount)
             ? Number(amount)
             : -1;
@@ -88,6 +154,7 @@ exports.refundLesson =
         const refund = await stripe.refunds.create({
           ...(refundAmount !== -1 && { amount: refundAmount }),
           payment_intent: payment_intent_id,
+        //  refund_application_fee: true,
         });
         return res.status(200).send({
           refund: refund.id,
@@ -97,7 +164,7 @@ exports.refundLesson =
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err;
-      console.error("[refund-lesson][error]", error);
+      console.error("[refund-lesson][error]", error.message);
       return res.status(400).send({
         error: {
           message: error.raw?.message,
@@ -156,10 +223,27 @@ exports.scheduleLesson =
     try {
       if (!customer_id || !amount || !description) {
         return res.status(400).send({
-          error: true,
-          message: "missing customer_id, amount, or description",
+          error: {
+            message: "missing customer_id, amount, or description",
+          }
         });
       }
+
+      try {
+        // if there are any created prior we should cancel them
+        const piList = (await stripe.paymentIntents.list({ customer: customer_id })).data.filter(
+          (n) => (n.status !== 'canceled' && n.status !== 'succeeded') || n.metadata?.type === 'auth_pending_payment',
+        )
+         // cancel any existing payment intents, and including subscription/type auth_pending_payment
+         // needed for initial payment hold
+        if (piList.length) {
+          for (const n of piList) {
+            await stripe.paymentIntents.cancel(n.id)
+            console.log('scheduleLesson','paymentIntent canceled', n.id, n.status, `cus:${customer_id}`)
+          }
+        }
+      } catch (err) {}
+ 
 
       const paymentMethod = (
         await stripe.customers.listPaymentMethods(customer_id, {
@@ -179,24 +263,36 @@ exports.scheduleLesson =
         metadata: { ...customer.metadata },
         customer: customer.id,
         receipt_email: customer.email,
+        // payment_method_options: {
+          
+        //   card: {
+        //     // so we can capture multiples: https://stripe.com/docs/payments/multicapture
+            
+        //     request_multicapture: 'if_available',
+        //   },
+        // },
       });
 
-      // if not set the status will be 'requires_confirmation'
       const paymentIntentConfirm = await stripe.paymentIntents.confirm(
         piCreate.id,
-        { payment_method: "pm_card_visa", capture_method: "manual" }
+        { payment_method: "pm_card_visa", capture_method: "manual",setup_future_usage:'off_session'  }
       );
+
+      // create subscription schedule
+      await createSubSchedule(stripe, customer.id, 'guitar_lesson',customer.metadata)
+  
 
       return res.status(200).send({
         payment: {
           ...paymentIntentConfirm,
         },
       });
+
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err;
 
-      console.error("[schedule-lesson][error]", error);
+      console.error("[schedule-lesson][error]", error.message);
 
       return res.status(400).send({
         error: {
@@ -239,54 +335,6 @@ exports.scheduleLesson =
 // ----------------------------------
 
 /**
- * @GET
- * @api /payment-method/:customer_id
- * @param {Stripe} stripe
- */
-exports.customerPaymentMethod =
-  (stripe) =>
-  /**
-   * @param {Request} req
-   * @param {Response} res
-   **/
-  async (req, res) => {
-    const { customer_id } = req.params;
-
-    if (!customer_id)
-      return res
-        .status(400)
-        .send({ error: { message: "missing customer_id" } });
-
-    try {
-      let r;
-      const paymentList = (r = (
-        await stripe.customers.listPaymentMethods(customer_id, {
-          type: "card",
-          expand: ["data.customer"],
-        })
-      )?.data[0]);
-
-      // if no payment exists get customer instead
-      if (!paymentList) {
-        r = {
-          customer: await stripe.customers.retrieve(customer_id),
-        };
-      }
-
-      res.status(200).send({
-        ...r,
-      });
-    } catch (err) {
-      /** @type {StripeAPIError} */
-      const error = err;
-      console.log("[GET][payment-method][error]", error);
-      return res.status(400).send({ ...error });
-    }
-  };
-
-// ----------------------------------
-
-/**
  * @POST
  * @api /complete-lesson-payment
  * @param {Stripe} stripe
@@ -300,16 +348,20 @@ exports.completeLessonPayment =
   async (req, res) => {
     const { payment_intent_id, amount } = req.body;
     try {
+
       if (!payment_intent_id) {
         return res.status(400).send({
-          error: true,
-          message: "missing payment_intent_id",
+          error: {
+            message: "missing payment_intent_id"
+          },
         });
       }
 
       const retrievePayment = await stripe.paymentIntents.retrieve(
-        payment_intent_id
+        payment_intent_id,
+        { expand: ["customer"] }  
       );
+     
 
       let amount_to_capture =
         !!amount && retrievePayment.amount_capturable !== Number(amount)
@@ -318,12 +370,35 @@ exports.completeLessonPayment =
 
       const confirmPayment = await stripe.paymentIntents.capture(
         payment_intent_id,
-        { ...(amount_to_capture !== -1 && { amount_to_capture }) }
+        { ...(amount_to_capture !== -1 && { amount_to_capture }),
+        //expand: ["customer"]
+        }
       );
+
+      // remove  auth_pending_payment 
+      const auth_pending_payments = (
+        await stripe.paymentIntents.list({ customer: retrievePayment.customer.i })
+      ).data.filter((n) => n.metadata?.type === 'auth_pending_payment')
+      for (const pending of auth_pending_payments) {
+        // cancel any existing payment intents
+        if (pending.status === 'canceled') continue
+        await stripe.paymentIntents.cancel(pending.id)
+        console.log(
+          'completeLessonPayment/auth_pending_payments',
+          'canceled',
+          pending.id,
+          pending.status
+        )
+      }
+   
+      // cancel subscriptions assigned to this customer
+
+      await cancelCustomerSubscriptions(retrievePayment.customer.id)
 
       return res.status(200).send({
         payment: confirmPayment,
       });
+
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err;
