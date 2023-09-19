@@ -23,9 +23,6 @@ const moment = require('moment')
   // }
   //
 
-//   expect(finalLessonTotalResponse.net_total).toBeTruthy();
-//   expect(finalLessonTotalResponse.fee_total).toBeTruthy();
-//   expect(finalLessonTotalResponse.payment_total).toBeTruthy();
 /**
  * @GET
  * @api /calculate-lesson-total
