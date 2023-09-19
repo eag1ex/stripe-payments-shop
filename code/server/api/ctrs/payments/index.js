@@ -259,7 +259,7 @@ exports.scheduleLesson =
       /** @type {StripeAPIError} */
       const error = err
 
-      console.error('[schedule-lesson][error]', error.message)
+      console.error('[schedule-lesson][error]', error)
 
       return res.status(400).send({
         error: {
@@ -314,7 +314,7 @@ exports.completeLessonPayment =
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err
-      console.error('[completeLessonPayment][error]', error.message)
+      console.error('[completeLessonPayment][error]', error)
       return res.status(400).send({
         error: {
           message: error?.message,

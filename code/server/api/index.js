@@ -7,9 +7,9 @@ const fs = require('fs')
 
 const { completeLessonPayment, scheduleLesson, refundLesson, lessonRefunds } = require('./ctrs/payments')
 const { getLessons, postLessons } = require('./ctrs/lessons')
-const { getCustomerPaymentMethod, accountUpdate,deleteCustomerAccount } = require('./ctrs/customer-account')
+const { getCustomerPaymentMethod, accountUpdate,deleteCustomerAccount, findCustomersWithFailedPayments } = require('./ctrs/customer-account')
 const { createProduct } = require('../libs/products')
-const {calculateLessonTotal,findCustomersWithFailedPayments} = require('./ctrs/reports')
+const {calculateLessonTotal} = require('./ctrs/reports')
 
 
 /**

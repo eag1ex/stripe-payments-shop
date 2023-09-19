@@ -6,8 +6,6 @@
 /** @typedef {import('../../../types').Customer.Metadata} CustomerMetadata */
 
 const moment = require('moment')
-const { paymentIntentCreateParams, reportsMarker } = require('../../../config')
-const { cancelCustomerSubscriptions, createSubSchedule } = require('../../../libs/schedules')
 
 
    // Milestone 4: '/calculate-lesson-total'
@@ -77,50 +75,3 @@ exports.calculateLessonTotal =
     }
   }
 
-
-/**
- * @GET
- * @api /find-customers-with-failed-payments
- * @param {Stripe} stripe
- * @returns
- */
-exports.findCustomersWithFailedPayments =
-  (stripe) =>
-  /**
-   * @param {Request} req
-   * @param {Response} res
-   **/
-  async (req, res) => {}
-
-  // Milestone 4: '/find-customers-with-failed-payments'
-  // Returns any customer who meets the following conditions:
-  // The last attempt to make a payment for that customer failed.
-  // The payment method associated with that customer is the same payment method used
-  // for the failed payment, in other words, the customer has not yet supplied a new payment method.
-  //
-  // Example request: curl -X GET http://localhost:4242/find-customers-with-failed-payments
-  //
-  // Returns a JSON response with information about each customer identified and
-  // their associated last payment
-  // attempt and, info about the payment method on file.
-  // [
-  //   {
-  //     customer: {
-  //       id: customer.id,
-  //       email: customer.email,
-  //       name: customer.name,
-  //     },
-  //     payment_intent: {
-  //       created: created timestamp for the payment intent
-  //       description: description from the payment intent
-  //       status: the status of the payment intent
-  //       error: the error returned from the payment attempt
-  //     },
-  //     payment_method: {
-  //       last4: last four of the card stored on the customer
-  //       brand: brand of the card stored on the customer
-  //     }
-  //   },
-  //   {},
-  //   {},
-  // ]

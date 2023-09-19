@@ -360,11 +360,15 @@ async function deletePaymentMethods(){
 }
 
 
+
 listCustomersDelete();
 cancelSubSchedules()
 deleteInvoices()
 cancelPaymentIntents()
 deletePaymentMethods()
+
+
+
 
 // const trial_end_test = moment().add(30,'seconds').unix()
 // console.log(trial_end_test,moment.unix(trial_end_test).toString())
