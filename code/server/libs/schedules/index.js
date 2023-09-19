@@ -8,7 +8,7 @@
 const { delay } = require('../../utils')
 const { paymentIntentCreateParams, scheduleRecurrence } = require('../../config')
 const moment = require('moment')
-
+const { v4: uuidv4 } = require('uuid')
 
 /**
  *
@@ -16,9 +16,10 @@ const moment = require('moment')
  * @param {*} customerId
  * @param {*} productId
  * @param {LessonSession} metadata
+ * @param {number} amount
  * @returns
  */
-exports.createSubSchedule = async (stripe, customerId, productId,metadata) => {
+exports.createSubSchedule = async (stripe, customerId, productId,metadata, amount) => {
   try {
 
  
@@ -36,69 +37,83 @@ exports.createSubSchedule = async (stripe, customerId, productId,metadata) => {
     //        return moment(Number(metadata.timestamp)).subtract(9+5+7,'days').unix()
     //      }
     //   }catch(err){
-
     //   }
     
     //  })()
 
+    const uid = uuidv4() 
+    const onLessonDay = moment(Number(metadata.timestamp)).unix()
+    //   const fiveDaysBeforeLesson = moment(Number(metadata.timestamp)).subtract(5,'days').unix()
+    //  const trial_end_test =moment.unix(lessonFutureScheduleDate).add(30,'seconds').unix()
+    //   const trial_end_test = moment().add(1,'minute').unix()
+    //   const start_date = moment().add(30,'seconds').unix()
 
-    const fiveDaysBeforeLesson = moment(Number(metadata.timestamp)).subtract(5,'days').unix()
     const sub = await stripe.subscriptionSchedules.create({
+      
       customer: customerId,
-      start_date:'now',
-      end_behavior: 'release',
+      // start At 5 days before the scheduled lesson,
+      start_date:onLessonDay,
+      end_behavior: 'cancel',
       default_settings:{
-       billing_cycle_anchor:'phase_start',
+      // billing_cycle_anchor:'phase_start',
         collection_method: 'charge_automatically'
       },
-
+      metadata:{
+        ...metadata,
+        uid:uid,
+      },
       phases: [
+        // {
+          
+        //   //billing_cycle_anchor:'phase_start', 
+        //   // trail period should add at start of the subscription {timestamp}
+        //   // trial_end:trial_end_test,
+        //   end_date:trial_end_test,
+        //  // iterations:1,
+        //   metadata:{
+        //     ...metadata,
+        //     message:'no charge, unit price is 0, phase one',
+        //     type:'auth_pending_payment',
+        //     uid:uid,
+        //   },
+        //   description:`At 5 days before the scheduled lesson, we'll put a hold (i.e. authorize a pending payment) on the student's card. If this doesn't go through, then we can immediately start booking a new student for our instructor.`,
+        //   currency: 'usd',
+        //   items: [
+        //     {
+              
+        //       price_data: {
+        //         unit_amount: 0,//paymentIntentCreateParams.amount,
+        //         currency: 'usd',
+        //         product: productId,
+        //         recurring: {
+        //           interval: 'day',
+        //           interval_count: 1,
+        //         },
+        //       },
+        //       metadata: {
+        //         ...metadata,
+        //         message:'no charge, unit price is 0, phase one',
+        //         type:'auth_pending_payment',
+        //         uid:uid,
+        //       },
+        //       quantity: 1,
+        //     },
+        //   ],
+        // },
         {
-         billing_cycle_anchor:'phase_start',
-          metadata:{
-            ...metadata,
-            message:'no charge, unit price is 0, phase one',
-            type:'auth_pending_payment',
-            amount_capturable:paymentIntentCreateParams.amount
-          },
-          description:`At 5 days before the scheduled lesson, we'll put a hold (i.e. authorize a pending payment) on the student's card. If this doesn't go through, then we can immediately start booking a new student for our instructor.`,
-          end_date:fiveDaysBeforeLesson,
-          currency: 'usd',
-          items: [
-            {
-              price_data: {
-                unit_amount: 0,//paymentIntentCreateParams.amount,
-                currency: 'usd',
-                product: productId,
-                recurring: {
-                  ...scheduleRecurrence,
-                },
-              },
-              metadata: {
-                ...metadata,
-                message:'no charge, unit price is 0, phase one'
-              },
-              quantity: 1,
-            },
-          ],
-        },
-        {
-          collection_method: 'charge_automatically', // send invoice put a hold (i.e. authorize a pending payment)
-          billing_cycle_anchor:'phase_start', 
+        collection_method: 'charge_automatically',
          description:`On the morning of the lesson, we capture the payment in full (no refunds if students cancel on the day of schedule)`,
          iterations: 11,
           currency: 'usd',
           metadata:{
             ...metadata,
-            message:'charge automatically, phase two',
-            type:'invoice_and_charge',
-            amount_capturable:paymentIntentCreateParams.amount
+            type:'invoice_and_charge', 
+            uid:uid,
           },
-          //end_date:oneYearSub,
           items: [
             {
               price_data: {
-                unit_amount: paymentIntentCreateParams.amount,
+                unit_amount:amount,
                 currency: 'usd',
                 product: productId,
                 recurring: {
@@ -107,7 +122,8 @@ exports.createSubSchedule = async (stripe, customerId, productId,metadata) => {
               },
               metadata: {
                 ...metadata,
-                message:'charge automatically, phase two'
+                type:'invoice_and_charge',
+                uid:uid,
               },
               quantity: 1,
             },
@@ -117,10 +133,13 @@ exports.createSubSchedule = async (stripe, customerId, productId,metadata) => {
     })
 
     console.log('[createSubSchedule]', {
+      uid,
+      start_date:moment.unix(start_date).toString(),
+      trial_end_test:moment.unix(trial_end_test).toString(),
       sub_sched: sub.id,
       customer: sub.customer,
       productId: productId,
-      amount: paymentIntentCreateParams.amount,
+      amount: amount,
     })
     return true
   } catch (err) {
@@ -168,7 +187,7 @@ exports.deleteSubscriptions=async (stripe,customerId)=>{
    // if(n.status === 'canceled') continue
     let c = await stripe.subscriptions.del(n.id)
     console.log('subscription deleted',c.id, c.status)
-    await delay(100)
+    //await delay(100)
   }
 }
 

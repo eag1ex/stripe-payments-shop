@@ -22,8 +22,6 @@ exports.deleteCustomerAccount =
   async (req, res) => {
     const { customer_id } = req.params
 
-    //  customer: Stripe.Response<Stripe.Customer | Stripe.DeletedCustomer>
-
 
      /**
       * 
@@ -34,15 +32,13 @@ exports.deleteCustomerAccount =
         let d = await stripe.customers.del(id)
         return d.deleted
       }catch(err){
-       console.error('[deleteCustomerAccount][deleteCustomer][error]',id, err)
+       console.error('[deleteCustomerAccount][deleteCustomer][error]',id, err?.message)
       }
       return false
     }
 
     try {
 
-
-      // customer exists ?
       const isDeleted = await stripe.customers.retrieve(customer_id)
       if(isDeleted.deleted) return res.status(200).send({ deleted: true })
 
@@ -54,19 +50,8 @@ exports.deleteCustomerAccount =
       }
 
      
-      let piIncomplete = piList.data.filter((n) => (n.status !== 'succeeded' && n.status !== 'canceled') || n.metadata?.type === 'auth_pending_payment')
+      let piIncomplete = piList.data.filter((n) => (n.status !== 'succeeded' && n.status !== 'canceled'))
  
-      // check for any auth pending as they do not have charge amount associated with them
-      for(let inx = 0; inx < piIncomplete.length; inx++ ){
-        let item = piIncomplete[inx]
-        if(item.metadata?.type === 'auth_pending_payment' && item.status !== 'canceled') {
-          // cancel payment intent
-           await stripe.paymentIntents.cancel(item.id)
-           piIncomplete.splice(inx,1)
-        }
-      }
-
-      piIncomplete = piIncomplete.filter((n) =>n.status !== 'canceled')
 
       // If the student has any uncultured payments, then it returns a list of Payment Intent IDs.
       if(piIncomplete.length){
@@ -102,7 +87,7 @@ exports.deleteCustomerAccount =
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err
-      console.error('[deleteCustomerAccount][error]', error)
+      console.error('[deleteCustomerAccount][error]', error.message)
       return res.status(400).send({
         error: {
           message: error.message,
@@ -110,7 +95,6 @@ exports.deleteCustomerAccount =
         },
       })
     }
-
  
   }
  

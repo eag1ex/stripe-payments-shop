@@ -21,7 +21,7 @@ const moment = require('moment')
 // Replace if using a different env file or config
 
 const cors = require('cors')
-const { v4: uuidv4 } = require('uuid')
+
 const morgan = require('morgan')
 const bodyParser = require('body-parser')
 const { EMAIL_REGEX } = require('./constants')
@@ -115,9 +115,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   console.log('[webhook][eventType]', eventType)
 
   if (data?.object?.object) console.log('[webhook][object]', data?.object?.object)
-  if (data?.object?.id) {
-    console.log('[webhook][object][id]', data?.object?.id)
-  }
+  if (data?.object?.id) console.log('[webhook][object][id]', data?.object?.id)
 
   if (eventType === 'payment_intent.amount_capturable_updated') {
     // try {
@@ -130,8 +128,30 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     // }
   }
 
-  if(eventType === 'customer.subscription.created'){}
+  if(eventType === 'customer.subscription.created'){
 
+     /** @type {Subscription} */
+     const sub = data.object
+    //  try{
+
+    //    await stripe.subscriptions.update(sub.id, {
+    //     payment_behavior:'error_if_incomplete',
+        
+    //     trial_settings:{
+    //       end_behavior:{
+    //         missing_payment_method:'cancel',
+    //       }
+    //     }
+    //    })
+    //    console.log('[customer.subscription.created][updates] ',sub.id)
+    //  }catch(err){
+    //   console.error('customer.subscription.created/error',err)
+    //  }
+  
+  }
+
+  if (eventType === 'customer.subscription.updated') {}
+  
   if (eventType === 'payment_method.attached') {
     // update customer name and email via webhook instead of using: /account-update/:customer_id
     /** @type {PaymentMethod} */
@@ -140,7 +160,6 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     try {
       // when ever new payment method is attached check and delete old payment methods
       const customersPaymentMethods = (await stripe.customers.listPaymentMethods(pm.customer)).data
-
       for (const n of customersPaymentMethods) {
         if (n.id !== pm.id) {
           await stripe.paymentMethods.detach(n.id)
@@ -152,6 +171,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
           )
         }
       }
+      
     } catch (err) {
       console.error(pm.customer, err)
     }
@@ -185,8 +205,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     // cancel subscription schedule
 
     // it is unclear which subscription schedule to cancel here
-    await cancelCustomerSubscriptions(stripe, rf.customer)
-    await deleteSubscriptions(stripe, rf.customer)
+    // await cancelCustomerSubscriptions(stripe, rf.customer)
+    // await deleteSubscriptions(stripe, rf.customer)
 
   }
 
@@ -199,9 +219,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   }
 
 
-  if (eventType === 'customer.subscription.created') { }
-   
-  if (eventType === 'customer.subscription.updated') {}
+
+
 
 
   // try to manually invoice customer if its due
@@ -228,27 +247,6 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   res.sendStatus(200)
 })
 
-// Routes
-// app.get('/', (req, res) => {
-//   try {
-//     const path = resolve(`${process.env.STATIC_DIR}/index.html`);
-//     if (!fs.existsSync(path)) throw Error();
-//     res.sendFile(path);
-//   } catch (error) {
-//     const path = resolve('./public/static-file-error.html');
-//     res.sendFile(path);
-//   }
-// });
-
-// Fetch the Stripe publishable key
-//
-// Example call:
-// curl -X GET http://localhost:4242/config \
-//
-// Returns: a JSON response of the pubblishable key
-//   {
-//        key: <STRIPE_PUBLISHABLE_KEY>
-//   }
 
 // load the api app
 app.use('/api', apiRouter(stripe))

@@ -23,9 +23,10 @@ exports.webhookInvoice = async (stripe, object, eventType) => {
       // invoice Placing a hold on a payment
       // https://stripe.com/docs/billing/invoices/subscription#placing-a-hold-on-a-payment
       console.log('[webhook][object][date] ', moment.unix(inv.created).toString())
-
+     
       const { type } = inv?.subscription_details?.metadata
-
+      console.log('[webhook][object][type] ', type)
+      return
       if (type === 'invoice_and_charge') {
         return
       }
