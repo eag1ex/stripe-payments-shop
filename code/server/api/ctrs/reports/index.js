@@ -6,7 +6,7 @@
 /** @typedef {import('../../../types').Customer.Metadata} CustomerMetadata */
 
 const moment = require('moment')
-
+const { delay } = require('../../../utils')
 
    // Milestone 4: '/calculate-lesson-total'
   // Returns the total amounts for payments for lessons, ignoring payments
@@ -44,14 +44,24 @@ exports.calculateLessonTotal =
         },
       }
 
-      const paymentTotal = (await stripe.paymentIntents.list({ ...until, expand:['data.charges.data.balance_transaction']})).data.filter(n=>n.status==='succeeded' && n.metadata?.type === 'lessons-payment' )
+      // list payment intent application fees for lessons 
+      const list = (await stripe.paymentIntents.list({ ...until, expand:['data.charges.data.balance_transaction']})).data
 
-     const refundTotal = (await stripe.refunds.list({ ...until, expand:['data.payment_intent']})).data.filter(n=>n.status==='succeeded' && n.payment_intent?.metadata?.type === 'lessons-payment')
+      console.log('calculateLessonTotal/list/fees',list.map(n=>({application_fee_amount:n.application_fee_amount, amount_received:n.amount_received, amount:n.amount, status:n.status}) ))
+     
+
+
+      const paymentTotal = list.filter(n=>n.status==='succeeded' && n.metadata?.type === 'lessons-payment' )
+      const piIds= paymentTotal.map(n=>n.id)
+
+     const refundTotal = (await stripe.refunds.list({ ...until, expand:['data.payment_intent']})).data.filter(n=>n.status==='succeeded' && n.payment_intent?.metadata?.type === 'lessons-payment' && piIds.includes(n.payment_intent.id) && n.payment_intent.amount_received===n.amount)
 
 
       const refund_total= refundTotal.reduce((a, b) => a + b.amount, 0)
       const feeTotal = (paymentTotal.reduce((a, b) => a + b.application_fee_amount, 0)) + refund_total
+
       const payment_total = paymentTotal.reduce((a, b) => a + b.amount, 0)
+  console.log('feeTotal ', payment_total,feeTotal)
       const totals = {
         payment_total,
         fee_total:feeTotal,
