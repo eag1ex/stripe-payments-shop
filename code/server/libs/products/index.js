@@ -17,12 +17,11 @@ const {paymentIntentCreateParams,scheduleRecurrence}= require('../../config')
  */
 exports.createProduct = async (stripe, name = 'Guitar Lesson', id = 'guitar_lesson') => {
   
+  // exist if product already created
   try {
     await stripe.products.retrieve(id)
-   // console.log('[createProduct][exists]', id)
     return
   } catch (err) {
-   // console.log('[createProduct][error][not exists]', id)
   }
 
   try {

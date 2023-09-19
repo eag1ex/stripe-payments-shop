@@ -50,7 +50,7 @@ exports.deleteCustomerAccount =
       }
 
      
-      let piIncomplete = piList.data.filter((n) => (n.status !== 'succeeded' && n.status !== 'canceled'))
+      let piIncomplete = piList.data.filter((n) => (n.status !== 'succeeded' && n.status !== 'canceled' && n.metadata?.type === 'lessons-payment'))
  
 
       // If the student has any uncultured payments, then it returns a list of Payment Intent IDs.
@@ -87,7 +87,7 @@ exports.deleteCustomerAccount =
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err
-      console.error('[deleteCustomerAccount][error]', error.message)
+      console.error('[deleteCustomerAccount][error]', error)
       return res.status(400).send({
         error: {
           message: error.message,

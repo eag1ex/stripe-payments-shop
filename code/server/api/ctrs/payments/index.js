@@ -163,20 +163,23 @@ exports.scheduleLesson =
         })
       }
 
-      // try {
-      //   // if there are any created prior we should cancel them
-      //   const piList = (await stripe.paymentIntents.list({ customer: customer_id })).data.filter(
-      //     (n) => (n.status !== 'canceled' && n.status !== 'succeeded')
-      //   )
+      try {
+        
+        // because we are using capture_method:manual to be able to set amount_to_capture at /complete-lesson-payment
+        // we need to cancel any existing payment intents, that belog to same customer
 
-      //   if (piList.length) {
-      //     for (const n of piList) {
-      //       await stripe.paymentIntents.cancel(n.id)
-      //       console.log('scheduleLesson','paymentIntent canceled', n.id,n.metadata.type, n.status, `cus:${customer_id}`)
-      //     }
-      //   }
-      // } catch (err) {}
+        const piList = (await stripe.paymentIntents.list({ customer: customer_id })).data.filter(
+          (n) => (n.metadata?.type === 'lessons-payment' && n.status === 'requires_capture')
+        )
+        if (piList.length) {
+          for (const n of piList) {
+            await stripe.paymentIntents.cancel(n.id)
+            console.log('scheduleLesson','paymentIntent canceled', n.id,n.metadata.type, n.status, `cus:${customer_id}`)
+          }
+        }
+      } catch (err) {}
 
+    
       const paymentMethod = (
         await stripe.customers.listPaymentMethods(customer_id, {
           type: 'card',
@@ -187,12 +190,13 @@ exports.scheduleLesson =
       /** @type {StripeCustomer} */
       const customer = paymentMethod.customer
 
+
+
       // At 5 days before the scheduled lesson, we'll put a hold (i.e. authorize a pending payment) on the student's card. If this doesn't go through, then we can immediately start booking a new student for our instructor.
       const atFiveDays = moment(Number(customer.metadata.timestamp))
         .startOf('day')
         .isBefore(moment().subtract(5, 'days').startOf('day'))
 
-        
 
       if (atFiveDays) {
         console.log('[scheduleLesson][atFiveDays][1]')
@@ -219,20 +223,7 @@ exports.scheduleLesson =
         })
       }
 
-      // try {
-      //   // if there are any created prior we should cancel them
-      //   const auth_pending_payment = (await stripe.paymentIntents.list({ customer: pi.customer.id })).data.filter(
-      //     (n) => n.metadata?.type === 'auth_pending_payment',
-      //   )
-      //    // cancel any existing payment intents, and including subscription/type auth_pending_payment
-      //    // needed for initial payment hold
-      //   if (auth_pending_payment.length) {
-      //     for (const n of auth_pending_payment) {
-      //       await stripe.paymentIntents.cancel(n.id)
-      //     }
-      //   }
-      // } catch (err) {}
-
+     
       const piCreate = await stripe.paymentIntents.create({
         ...paymentIntentCreateParams,
         amount,
@@ -310,7 +301,7 @@ exports.completeLessonPayment =
       let amount_to_capture =
         (!!amount && !!retrievePayment.amount_capturable) && retrievePayment.amount_capturable !== Number(amount) ? Number(amount) :retrievePayment.amount_capturable|| -1
 
-      const confirmPayment = await stripe.paymentIntents.capture(payment_intent_id, {
+      const confirmPayment = await stripe.paymentIntents.capture(retrievePayment.id, {
         ...(amount_to_capture !== -1 && { amount_to_capture }),
       })
 

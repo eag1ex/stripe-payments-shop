@@ -6,7 +6,7 @@
  * @typedef {import('stripe').Stripe} Stripe
  * @typedef {import('../../types').Customer.LessonSession} LessonSession
  */
-const {paymentIntentCreateParams}= require('../../config')
+// const {paymentIntentCreateParams}= require('../../config')
 
 
 /**
