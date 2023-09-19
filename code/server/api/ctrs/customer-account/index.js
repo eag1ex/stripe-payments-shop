@@ -1,12 +1,17 @@
 /** @typedef {import('stripe').Stripe} Stripe */
 
 /** @typedef {import('stripe').Stripe.SetupIntent} StripeSetupIntent */
+/** @typedef {import('stripe').Stripe.PaymentMethod} PaymentMethod */
+/** @typedef {import('stripe').Stripe.PaymentIntent.LastPaymentError} LastPaymentError */
+/** @typedef {import('stripe').Stripe.PaymentIntent} PaymentIntent */
 /** @typedef {import('stripe').Stripe.errors.StripeAPIError} StripeAPIError */
 /** @typedef {import('stripe').Stripe.Customer} StripeCustomer */
 /** @typedef {import('express').Request} Request */
 /** @typedef {import('express').Response} Response */
 
 const { EMAIL_REGEX } = require('../../../constants')
+const { cusFailedPaymentDto } = require('../../../utils')
+const moment = require('moment')
 
 /**
  * @POST
@@ -22,87 +27,73 @@ exports.deleteCustomerAccount =
   async (req, res) => {
     const { customer_id } = req.params
 
-    //  customer: Stripe.Response<Stripe.Customer | Stripe.DeletedCustomer>
-
-
-     /**
-      * 
-      * @returns any
-      */
-    const deleteCustomer = async (id)=>{
-      try{
+    /**
+     *
+     * @returns any
+     */
+    const deleteCustomer = async (id) => {
+      try {
         let d = await stripe.customers.del(id)
         return d.deleted
-      }catch(err){
-       console.error('[deleteCustomerAccount][deleteCustomer][error]',id, err)
+      } catch (err) {
+        console.log('[deleteCustomerAccount][deleteCustomer][error]', id, err?.message)
       }
       return false
     }
 
     try {
-
-
-      // customer exists ?
       const isDeleted = await stripe.customers.retrieve(customer_id)
-      if(isDeleted.deleted) return res.status(200).send({ deleted: true })
+      if (isDeleted.deleted) return res.status(200).send({ deleted: true })
 
-      const piList = await stripe.paymentIntents.list({ customer: customer_id, expand: ['data.customer'] })
-      
+      const piList = await stripe.paymentIntents.list({
+        customer: customer_id,
+        expand: ['data.customer'],
+      })
+
       if (!piList.data?.length) {
         const del = await deleteCustomer(customer_id)
         return res.status(200).send({ deleted: del })
       }
 
-     
-      let piIncomplete = piList.data.filter((n) => (n.status !== 'succeeded' && n.status !== 'canceled') || n.metadata?.type === 'auth_pending_payment')
- 
-      // check for any auth pending as they do not have charge amount associated with them
-      for(let inx = 0; inx < piIncomplete.length; inx++ ){
-        let item = piIncomplete[inx]
-        if(item.metadata?.type === 'auth_pending_payment' && item.status !== 'canceled') {
-          // cancel payment intent
-           await stripe.paymentIntents.cancel(item.id)
-           piIncomplete.splice(inx,1)
-        }
-      }
-
-      piIncomplete = piIncomplete.filter((n) =>n.status !== 'canceled')
+      let piIncomplete = piList.data.filter(
+        (n) =>
+          n.status !== 'succeeded' &&
+          n.status !== 'canceled' &&
+          n.metadata?.type === 'lessons-payment',
+      )
 
       // If the student has any uncultured payments, then it returns a list of Payment Intent IDs.
-      if(piIncomplete.length){
-        return res.status(200).send({uncaptured_payments:piIncomplete.map(n=>n.id)})
+      if (piIncomplete.length) {
+        return res.status(200).send({ uncaptured_payments: piIncomplete.map((n) => n.id) })
       }
 
       const piCompleted = piList.data.filter((n) => n.status === 'succeeded')
       // If the student has completed all of their payments, delete their Customer
-      if(piCompleted.length){
-
+      if (piCompleted.length) {
         let deleted = []
-        for(const pi of piCompleted){
+        for (const pi of piCompleted) {
           /** @type {StripeCustomer} */
           const customer = pi.customer
-          if(typeof customer ==='object') {
-            if(customer?.deleted) continue
+          if (typeof customer === 'object') {
+            if (customer?.deleted) continue
             const del = await deleteCustomer(customer.id)
-            if(del) deleted.push(customer.id)
+            if (del) deleted.push(customer.id)
           }
         }
 
-        if(deleted.length){
-          return res.status(200).send({deleted:true})
+        if (deleted.length) {
+          return res.status(200).send({ deleted: true })
         }
       }
 
-      // no match 
-      else{
-        return res.status(200).send({deleted:false})
+      // no match
+      else {
+        return res.status(200).send({ deleted: false })
       }
-
-      
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err
-      console.error('[deleteCustomerAccount][error]', error)
+      console.error('[deleteCustomerAccount][error]', error.message)
       return res.status(400).send({
         error: {
           message: error.message,
@@ -110,43 +101,7 @@ exports.deleteCustomerAccount =
         },
       })
     }
-
-    // stripe.customers.listPaymentMethods(customer_id,{type:'card',expand:['data.customer']})
-    // const customer = await stripe.customers.retrieve(customer_id,{expand:['invoice_settings.default_payment_method']})
-    // customer.
   }
- // Milestone 3: '/delete-account'
-  // Deletes a customer object if there are no uncaptured payment intents for them.
-  //
-  // Parameters:
-  //   customer_id: the id of the customer to delete
-  //
-  // Example request
-  //   curl -X POST http://localhost:4242/delete-account/:customer_id \
-  //
-  // Returns 1 of 3 responses:
-  // If the customer had no uncaptured charges and was successfully deleted returns the response:
-  //   {
-  //        deleted: true
-  //   }
-  //
-  // If the customer had uncaptured payment intents, return a list of the payment intent ids:
-  //   {
-  //     uncaptured_payments: ids of any uncaptured payment intents
-  //   }
-  //
-  // If there was an error:
-  //  {
-  //    error: {
-  //        code: e.error.code,
-  //        message: e.error.message
-  //      }
-  //  }
-  //
-
-
-
-
 
 /**
  * @GET
@@ -177,7 +132,7 @@ exports.getCustomerPaymentMethod =
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err
-      console.error('[GET][getCustomerPaymentMethod][error]', error.message)
+      console.log('[GET][getCustomerPaymentMethod][error]', error.message)
       return res.status(400).send({ error: { message: error.message, code: error.code } })
     }
   }
@@ -214,30 +169,11 @@ exports.accountUpdate =
         return r
       })()
 
-      if ((!!results && !!results?.id) && results?.id !== customer_id) throw Error(`CUSTOMER_WITH_EMAIL_ALREADY_EXISTS`)
+      if (!!results && !!results?.id && results?.id !== customer_id)
+        throw Error(`CUSTOMER_WITH_EMAIL_ALREADY_EXISTS`)
 
       const si = (await stripe.setupIntents.list({ customer: customer_id })).data[0]
       if (!si) throw Error(`setupIntent for customer: ${customer_id} not found`)
-
-      // if (!!name || !!email)
-      //   await stripe.customers.update(customer_id, {
-      //     ...(!!name && { name }),
-      //     ...(!!email && { email }),
-      //   })
-
-      // i think we done need to update the payment method here as it gets in the way of the setupIntent
-      // const pmId = typeof si.payment_method === 'string' ? si.payment_method : si.payment_method.id
-      // await stripe.paymentMethods.update(pmId, {
-      //   billing_details: {
-      //     name,
-      //     email,
-      //   },
-      // })
-
-      // update should provide new client_secret if we are updating the payment_method there after
-      // const { client_secret, customer, payment_method } = await stripe.setupIntents.retrieve(si.id, {
-      //   expand: ['payment_method', 'customer'],
-      // })
 
       const setupIntent = await stripe.setupIntents.create({
         customer: results.id,
@@ -274,3 +210,142 @@ exports.accountUpdate =
       })
     }
   }
+
+/**
+ * @GET
+ * @api /find-customers-with-failed-payments
+ * @param {Stripe} stripe
+ * @returns
+ */
+exports.findCustomersWithFailedPayments =
+  (stripe) =>
+  /**
+   * @param {Request} req
+   * @param {Response} res
+   **/
+  async (req, res) => {
+    try {
+      const until = {
+        created: {
+          gte: moment().subtract(36, 'hours').unix(),
+        },
+      }
+
+      const list = (await stripe.paymentIntents.list({...until})).data
+      const errorList= list.filter(n=>!!n.last_payment_error)
+      
+      if(errorList.length){
+        console.log('[findCustomersWithFailedPayments][errorList]', JSON.stringify(errorList,null,2))
+      }
+    
+
+      // Only check the last 36 hours of payments
+      const paymentIntents = (
+        await stripe.paymentIntents.list({
+          ...until,
+          expand: ['data.payment_method', 'data.customer'],
+        })
+      ).data
+
+      /**
+       *
+       * @param {LastPaymentError} last_payment_error
+       */
+      const issuerDeclined = (last_payment_error) => {
+        const errMsg = 'issuer_declined'
+        const customError =
+          (last_payment_error?.type.includes(errMsg) ||
+            last_payment_error?.code?.includes(errMsg) ||
+            last_payment_error?.decline_code?.includes(errMsg) ||
+            last_payment_error?.message.includes(errMsg)) &&
+          'issuer_declined'
+        return customError ? 'issuer_declined' : undefined
+      }
+
+    
+      
+      /**
+       * from dto() response object
+       */
+      const results = []
+
+      for (const pi of paymentIntents) {
+        if (!!pi.last_payment_error) {
+          const result = issuerDeclined(pi.last_payment_error)
+          if (result) {
+            results.push(cusFailedPaymentDto(pi, pi.last_payment_error))
+          }
+        }
+      }
+
+
+      // initial results with errors
+      // now check customers payment method and if it is the same as the failed payment
+      if(results.length){
+        // for loop
+        for(let inx=0; inx<results.length; inx++){
+          const r = results[inx]
+          
+          try{
+            // matching payment methods against paymentIntent
+            const list = (await stripe.paymentMethods.list({customer:r.customer.id,type:'card'})).data.filter(n=>n.id === r.payment_method.id)
+            if(list.length){
+              // if there is a match then remove from results
+              results.splice(inx, 1)
+            }
+          }catch(err){
+            console.error('[findCustomersWithFailedPayments][paymentMethods][forloop][error]', err.message)
+          }
+        }
+      }  
+
+      // finally remove ids from results
+      results.forEach(n=>{
+        delete n.payment_method.id
+        delete n.payment_intent.id
+        delete n.customer.id
+      })
+
+      return res.status(200).send(results)
+
+    } catch (err) {
+      /** @type {StripeAPIError} */
+      const error = err
+      console.log('[GET][getCustomerPaymentMethod][error]', error.message)
+      return res.status(400).send({ error: { message: error.message, code: error.code } })
+    }
+  }
+
+// Milestone 4: '/find-customers-with-failed-payments'
+// Returns any customer who meets the following conditions:
+// The last attempt to make a payment for that customer failed.
+// The payment method associated with that customer is the same payment method used
+// for the failed payment, in other words, the customer has not yet supplied a new payment method.
+//
+// Example request: curl -X GET http://localhost:4242/find-customers-with-failed-payments
+//
+// Returns a JSON response with information about each customer identified and
+// their associated last payment
+// attempt and, info about the payment method on file.
+// [
+//   {
+//     customer: {
+//       id: customer.id,
+//       email: customer.email,
+//       name: customer.name,
+//     },
+//     payment_intent: {
+//       created: created timestamp for the payment intent
+//       description: description from the payment intent
+//       status: the status of the payment intent
+//        error: the error returned from the payment attempt
+//     },
+//     payment_method: {
+//       last4: last four of the card stored on the customer
+//       brand: brand of the card stored on the customer
+//     }
+//   },
+// ]
+
+// https://stripe.com/docs/testing?testing-method=card-numbers#invalid-data
+// https://stripe.com/docs/testing?testing-method=card-numbers#declined-payments

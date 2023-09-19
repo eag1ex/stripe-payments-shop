@@ -30,7 +30,7 @@ function listCustomersDelete() {
   });
 } //
 
-//listCustomersDelete();
+
 
 async function createPriceSession() {
   //   const product = await Stripe.products.create({
@@ -241,21 +241,25 @@ async function createPrice(){
 
 
 async function cancelSubSchedules(){
-  
-  const subscriptionSchedule = await Stripe.subscriptionSchedules.list()
-  console.log('subscriptionSchedule/count'  ,subscriptionSchedule.data.length)
-  for(const n of subscriptionSchedule.data){
-    if(n.status === 'canceled') continue
-    let c = await Stripe.subscriptionSchedules.cancel(n.id)
-    console.log('schedule canceled',c.id, c.status)
-    await delay(100)
+  try{
+    const subscriptionSchedule = await Stripe.subscriptionSchedules.list()
+    console.log('subscriptionSchedule/count'  ,subscriptionSchedule.data.length)
+    for(const n of subscriptionSchedule.data){
+      if(n.status === 'canceled') continue
+      let c = await Stripe.subscriptionSchedules.cancel(n.id)
+      console.log('schedule canceled',c.id, c.status)
+      await delay(100)
+    }
+  }catch(err){
+
   }
+
 
   // cancel one schedule
  // const c = await Stripe.subscriptionSchedules.cancel('sub_sched_1NqYKhDo67vHA3BFKfVZRREa')
 }
 
-cancelSubSchedules()
+
 
 
 
@@ -283,3 +287,88 @@ async function customerPaymentMethod() {
 
 }
 //customerPaymentMethod()
+
+
+async function deleteInvoices(){
+  try{
+    const invoices = await Stripe.invoices.list({limit:1000})
+    console.log('invoices',invoices.data.length)
+    for(const n of invoices.data){
+     // if(n.status === 'paid') continue
+      let c = await Stripe.invoices.del(n.id)
+      console.log('invoice deleted',c.id, c.status)
+      await delay(100)
+    }
+  }catch(err){
+
+  }
+
+}
+
+
+async function deleteSubscriptions(){
+  try{
+    const subscriptions = await Stripe.subscriptions.list({limit:1000})
+  console.log('subscriptions',subscriptions.data.length)
+  for(const n of subscriptions.data){
+   // if(n.status === 'canceled') continue
+    let c = await Stripe.subscriptions.del(n.id)
+    console.log('subscription deleted',c.id, c.status)
+    await delay(100)
+  }
+  }catch(err){
+
+  }
+  
+}
+//deleteSubscriptions()
+
+
+// cancel all payment intents
+async function cancelPaymentIntents(){
+  try{
+    const paymentIntents = await Stripe.paymentIntents.list({limit:1000})
+    console.log('paymentIntents',paymentIntents.data.length)
+    for(const n of paymentIntents.data){
+      if(n.status === 'succeeded' || n.status==='canceled') continue
+      let c = await Stripe.paymentIntents.cancel(n.id)
+      console.log('paymentIntent canceled',c.id, c.status)
+      await delay(100)
+    }
+  }catch(err){
+
+  }
+
+
+}
+
+
+// delete all payment methods
+async function deletePaymentMethods(){
+  try{
+    const paymentMethods = await Stripe.paymentMethods.list({limit:1000})
+    console.log('paymentMethods',paymentMethods.data.length)
+    for(const n of paymentMethods.data){
+     // if(n.type !== 'card') continue
+      let c = await Stripe.paymentMethods.detach(n.id)
+      console.log('paymentMethod deleted',c.id, c.type)
+      await delay(100)
+    }
+  }catch(err){
+    
+  }
+}
+
+
+
+// listCustomersDelete();
+// cancelSubSchedules()
+// deleteInvoices()
+// cancelPaymentIntents()
+// deletePaymentMethods()
+
+
+
+
+// const trial_end_test = moment().add(30,'seconds').unix()
+// console.log(trial_end_test,moment.unix(trial_end_test).toString())

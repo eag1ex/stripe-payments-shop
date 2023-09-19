@@ -9,10 +9,14 @@
  * @type {PriceScheduleRecurrence | ProductScheduleRecurrence}
  */
 exports.scheduleRecurrence = {
-  interval: 'month',
+  interval: 'week',
   interval_count: 1,
 }
 
+/// this always need to change
+
+
+exports.reportsMarker = process.env.ENV==='TEST' ? 'reports_3445656':null
 
 
 /** @type {PaymentIntentCreateParams}  */

@@ -75,11 +75,11 @@ exports.postLessons =
       if (r.metadata) {
         // @ts-ignore
         r.metadata.index = (() => {
-          let index
+          let index = 0 
           if (r.metadata.type === 'first_lesson') index = 0
           if (r.metadata.type === 'second_lesson') index = 1
           if (r.metadata.type === 'third_lesson') index = 2
-
+          // we dont support the type: lessons-payment
           return index
         })()
       }
@@ -102,7 +102,7 @@ exports.postLessons =
         email: r.email,
       })
     } catch (error) {
-      console.error('[lessons][error]', error)
+      console.log('[lessons][error]', error)
 
       res.status(400).send({
         error: {
