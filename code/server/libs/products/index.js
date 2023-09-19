@@ -38,7 +38,7 @@ exports.createProduct = async (stripe, name = 'Guitar Lesson', id = 'guitar_less
     })
     console.log('[createProduct][create]', product.id)
   } catch (err) {
-    console.error('[createProduct][error]', id, err)
+    console.log('[createProduct][error]', id, err.message)
   }
 
 }

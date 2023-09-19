@@ -53,7 +53,7 @@ exports.cusFailedPaymentDto = (pi, error) => {
       },
     }
   } catch (err) {
-    console.error('[findCustomersWithFailedPayments][dto][error]', err)
+    console.log('[findCustomersWithFailedPayments][dto][error]', err)
     return err
   }
 }

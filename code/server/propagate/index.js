@@ -321,7 +321,7 @@ async function deleteSubscriptions(){
   }
   
 }
-deleteSubscriptions()
+//deleteSubscriptions()
 
 
 // cancel all payment intents
@@ -361,11 +361,11 @@ async function deletePaymentMethods(){
 
 
 
-listCustomersDelete();
-cancelSubSchedules()
-deleteInvoices()
-cancelPaymentIntents()
-deletePaymentMethods()
+// listCustomersDelete();
+// cancelSubSchedules()
+// deleteInvoices()
+// cancelPaymentIntents()
+// deletePaymentMethods()
 
 
 

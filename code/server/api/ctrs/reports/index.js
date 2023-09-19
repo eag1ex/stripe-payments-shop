@@ -62,7 +62,7 @@ exports.calculateLessonTotal =
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err
-      console.error('[calculateLessonTotal][error]', error)
+      console.log('[calculateLessonTotal][error]', error)
       return res.status(400).send({
         error: {
           message: error.message,

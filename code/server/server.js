@@ -15,8 +15,8 @@ require('dotenv').config({ path: './.env' })
 
 const express = require('express')
 const app = express()
-const { resolve, join } = require('path')
-const moment = require('moment')
+const { join } = require('path')
+
 
 // Replace if using a different env file or config
 
@@ -29,18 +29,12 @@ const ejs = require('ejs')
 const fs = require('fs')
 const { apiVersion, clientDir } = require('./config')
 
-const { createSubSchedule,cancelCustomerSubscriptions,deleteSubscriptions } = require('./libs/schedules')
-const {webhookInvoice} = require('./libs/webhooks')
-
 /** @type {Stripe} */
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, { apiVersion })
-
-// const { getCustomerPaymentMethodType }  = require('./services')
-
 const { apiRouter } = require('./api')
-const e = require('express')
+
+
 const allitems = {}
-const apiBase = `https://api.stripe.com/v1`
 
 app.set('trust proxy', 1) // trust first proxy
 app.use(morgan('dev'))
@@ -117,39 +111,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   if (data?.object?.object) console.log('[webhook][object]', data?.object?.object)
   if (data?.object?.id) console.log('[webhook][object][id]', data?.object?.id)
 
-  if (eventType === 'payment_intent.amount_capturable_updated') {
-    // try {
-    //   /** @type {PaymentIntent} */
-    //   const pi = data.object
-  
-
-    // } catch (err) {
-    //   // console.error(err)
-    // }
-  }
-
-  if(eventType === 'customer.subscription.created'){
-
-     /** @type {Subscription} */
-     const sub = data.object
-    //  try{
-
-    //    await stripe.subscriptions.update(sub.id, {
-    //     payment_behavior:'error_if_incomplete',
-        
-    //     trial_settings:{
-    //       end_behavior:{
-    //         missing_payment_method:'cancel',
-    //       }
-    //     }
-    //    })
-    //    console.log('[customer.subscription.created][updates] ',sub.id)
-    //  }catch(err){
-    //   console.error('customer.subscription.created/error',err)
-    //  }
-  
-  }
-
+  if (eventType === 'payment_intent.amount_capturable_updated') {}
+  if(eventType === 'customer.subscription.created'){}
   if (eventType === 'customer.subscription.updated') {}
   
   if (eventType === 'payment_method.attached') {
@@ -173,7 +136,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       }
       
     } catch (err) {
-      console.error(pm.customer, err)
+      console.log(err.message)
     }
 
     // add new subscription schedule id to customer metadata
@@ -188,39 +151,23 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
           ...(email && { email }),
         })
       console.log('[webhook][customers][updated]', pm.customer)
-
       }
 
     } catch (err) {
-      console.error(pm.customer, err)
+      console.log(pm.customer, err.message)
     }
 
-    // create new subscription schedule for customer
- 
   }
 
   if (eventType === 'charge.refunded') {
     /** @type {Charge} */
     const rf = data.object
-    // cancel subscription schedule
-
-    // it is unclear which subscription schedule to cancel here
-    // await cancelCustomerSubscriptions(stripe, rf.customer)
-    // await deleteSubscriptions(stripe, rf.customer)
-
   }
 
   if (eventType === 'customer.deleted') {
     /** @type {Customer} */
     const cus = data.object
-    // cancel subscription schedule
-    await cancelCustomerSubscriptions(stripe, cus.id)
-    await deleteSubscriptions(stripe, cus.id)
   }
-
-
-
-
 
 
   // try to manually invoice customer if its due
@@ -228,8 +175,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
     /** @type {Invoice} */
     const inv = data.object
-    await webhookInvoice(stripe, inv,eventType)
-
+  
   }
 
   if (eventType === 'payment_intent.succeeded') {
@@ -269,5 +215,4 @@ function errorHandler(err, req, res, next) {
 }
 
 app.use(errorHandler)
-
 app.listen(4242, () => console.log(`Node server listening on port http://localhost:${4242}`))

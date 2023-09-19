@@ -36,7 +36,7 @@ exports.deleteCustomerAccount =
         let d = await stripe.customers.del(id)
         return d.deleted
       } catch (err) {
-        console.error('[deleteCustomerAccount][deleteCustomer][error]', id, err?.message)
+        console.log('[deleteCustomerAccount][deleteCustomer][error]', id, err?.message)
       }
       return false
     }
@@ -93,7 +93,7 @@ exports.deleteCustomerAccount =
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err
-      console.error('[deleteCustomerAccount][error]', error)
+      console.error('[deleteCustomerAccount][error]', error.message)
       return res.status(400).send({
         error: {
           message: error.message,
@@ -132,7 +132,7 @@ exports.getCustomerPaymentMethod =
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err
-      console.error('[GET][getCustomerPaymentMethod][error]', error.message)
+      console.log('[GET][getCustomerPaymentMethod][error]', error.message)
       return res.status(400).send({ error: { message: error.message, code: error.code } })
     }
   }
@@ -311,7 +311,7 @@ exports.findCustomersWithFailedPayments =
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err
-      console.error('[GET][getCustomerPaymentMethod][error]', error.message)
+      console.log('[GET][getCustomerPaymentMethod][error]', error.message)
       return res.status(400).send({ error: { message: error.message, code: error.code } })
     }
   }

@@ -127,7 +127,7 @@ exports.refundLesson =
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err
-      console.error('[refund-lesson][error]', error.message)
+      console.log('[refund-lesson][error]', error.message)
       return res.status(400).send({
         error: {
           message: error?.message,
@@ -314,7 +314,7 @@ exports.completeLessonPayment =
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err
-      console.error('[completeLessonPayment][error]', error)
+      console.log('[completeLessonPayment][error]', error.message)
       return res.status(400).send({
         error: {
           message: error?.message,

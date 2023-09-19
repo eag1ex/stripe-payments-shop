@@ -166,7 +166,7 @@ exports.cancelCustomerSubscriptions = async (stripe, customerId) => {
     }
     return true
   } catch (err) {
-    console.log('[cancelCustomerSubscriptions][error]', err.message)
+    console.error('[cancelCustomerSubscriptions][error]', err.message)
   }
   return false
 }

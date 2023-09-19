@@ -102,7 +102,7 @@ exports.postLessons =
         email: r.email,
       })
     } catch (error) {
-      console.error('[lessons][error]', error)
+      console.log('[lessons][error]', error)
 
       res.status(400).send({
         error: {
