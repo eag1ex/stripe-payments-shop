@@ -43,11 +43,16 @@ exports.calculateLessonTotal =
           gte: moment().subtract(36, 'hours').unix(),
         },
       }
+      // for testing check report only for existing customers
+      //const cusIds = (await stripe.customers.list({ limit: 10000 })).data.map(n=>n.id)
+
+      // console.log('list/customers',cusIds)
+
 
       const lessonType = 'lessons-payment' 
 
       // list all charges for lessons
-       const charges = (await stripe.charges.list({ ...until,  expand:['data.balance_transaction','data.payment_intent']})).data.filter(n=>n.status==='succeeded' && n.metadata?.type === lessonType)
+       const charges = (await stripe.charges.list({ ...until,  expand:['data.balance_transaction','data.payment_intent']})).data.filter(n=>n.status==='succeeded' && n.metadata?.type === lessonType /*&& cusIds.includes(n.customer)*/)
 
        console.log('list/charges',JSON.stringify(charges.map(n=>({amount:n.amount, amount_refunded:n.amount_refunded, paid:n.paid, status:n.status, balance_transaction:n.balance_transaction, payment_intent:n.payment_intent})),null,2))
 

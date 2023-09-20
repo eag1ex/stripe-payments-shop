@@ -5,13 +5,13 @@ const apiRouter = express.Router()
 const { resolve } = require('path')
 const fs = require('fs')
 
-const { completeLessonPayment, scheduleLesson, refundLesson, lessonRefunds } = require('./ctrs/payments')
+const { completeLessonPayment, scheduleLesson, refundLesson, lessonRefunded } = require('./ctrs/payments')
 const { getLessons, postLessons } = require('./ctrs/lessons')
 const { getCustomerPaymentMethod, accountUpdate,deleteCustomerAccount, findCustomersWithFailedPayments } = require('./ctrs/customer-account')
 const { createProduct } = require('../libs/products')
 const {calculateLessonTotal} = require('./ctrs/reports')
 
-
+completeLessonPayment()
 /**
  * API router
  * @param {import('stripe').Stripe} stripe
@@ -34,7 +34,7 @@ exports.apiRouter = (stripe) => {
   apiRouter.post('/complete-lesson-payment', completeLessonPayment(stripe))
   apiRouter.post('/schedule-lesson', scheduleLesson(stripe))
   apiRouter.post('/refund-lesson', refundLesson(stripe))
-  apiRouter.get('/refunds/:refundId', lessonRefunds(stripe))
+  apiRouter.get('/refunds/:refundId', lessonRefunded(stripe))
   //----------------------------------
 
   //-- lessons api

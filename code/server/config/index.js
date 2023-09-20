@@ -29,5 +29,6 @@ exports.paymentIntentCreateParams = {
 }
 
 exports.baseCurrency = baseCurrency
+
 exports.apiVersion = '2022-11-15'
 exports.clientDir = 'build'

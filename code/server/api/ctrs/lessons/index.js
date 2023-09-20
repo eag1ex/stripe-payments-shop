@@ -52,6 +52,10 @@ exports.postLessons =
         })
 
       const meta = customerMetadata(metadata)
+
+      //NOTE  to satisfy stripe's metadata requirements
+      meta.first_lesson = meta.date
+
       const cus = await stripe.customers.search({
         query: `email:"${learnerEmail}"`,
       })
@@ -75,17 +79,22 @@ exports.postLessons =
       if (r.metadata) {
         // @ts-ignore
         r.metadata.index = (() => {
+          
           let index = 0 
-          if (r.metadata.type === 'first_lesson') index = 0
-          if (r.metadata.type === 'second_lesson') index = 1
-          if (r.metadata.type === 'third_lesson') index = 2
-          // we dont support the type: lessons-payment
+          // these lessons reflect the order of the lessons in the UI
+          if (r.metadata.type === 'zero_lesson') index = 0
+          if (r.metadata.type === 'one_lesson') index = 1
+          if (r.metadata.type === 'two_lesson') index = 2
+          if (r.metadata.type === 'three_lesson') index = 3
+          if (r.metadata.type === 'four_lesson') index = 4
+          if (r.metadata.type === 'five_lesson') index = 5
+          if (r.metadata.type === 'six_lesson') index = 6
+   
           return index
         })()
       }
 
       const setupIntent = await stripe.setupIntents.create({
-        
         customer: r.id,
         metadata: r.metadata,
       })

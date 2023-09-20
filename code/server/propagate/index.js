@@ -360,15 +360,76 @@ async function deletePaymentMethods(){
 }
 
 
+// update customer metadata
+async function updateCustomerMetadata(){
+  try{
 
-listCustomersDelete();
-cancelSubSchedules()
-deleteInvoices()
-cancelPaymentIntents()
-deletePaymentMethods()
+    // cus_OfeQKWE2x8FtUL
+    const cus = await Stripe.customers.update('cus_OfeQKWE2x8FtUL',{
+      metadata:{
+        date: "11 Oct",
+        first_lesson: "11 Oct",
+        time: "5:00 p.m.",
+        timestamp: moment().subtract(5,'days').valueOf(),
+        type: "third_lesson"
+      }
+    })
+
+    console.log('customer updated',cus.metadata)
+
+  }catch(err){
+    console.error(err)
+  }
+} 
+//updateCustomerMetadata()
+
+
+
+// listCustomersDelete();
+// cancelSubSchedules()
+// deleteInvoices()
+// cancelPaymentIntents()
+// deletePaymentMethods()
 
 
 
 
 // const trial_end_test = moment().add(30,'seconds').unix()
 // console.log(trial_end_test,moment.unix(trial_end_test).toString())
+
+
+// At 5 days before the scheduled lesson, we'll put a hold (i.e. authorize a pending payment) on the student's card. If this doesn't go through, then we can immediately start booking a new student for our instructor.
+// If a student cancels one or two days before their lesson, we'll capture half of the payment as a late cancellation fee.
+// On the morning of the lesson, we capture the payment in full (no refunds if students cancel on the day of).s
+// If an instructor has to shorten or cancel a lesson, then we'll send a partial or full refund. For peace of mind, we would like to manually control each of these steps.
+
+/**
+ * 
+ * @param {Number} timestamp 
+ * @returns {'one_two_days_before'|'five_days_before'|'day_of'}
+ */
+const schedulePlanner = (timestamp)=>{
+
+ 
+  const bookingDay =  moment(timestamp).startOf('day').date()
+  const now = moment().startOf('day').date()
+  console.log(bookingDay, now)
+
+  if(now+5 ===bookingDay){
+    return 'five_days_before'
+  }
+  
+  if(bookingDay=== now+2  || now +1===bookingDay){
+    return 'one_two_days_before'
+  }
+  else return 'day_of'
+}
+
+const fiveDaysBefore = moment().subtract(5, 'days').endOf('day').valueOf()
+const oneDaysBefore = moment().subtract(1, 'days').valueOf()
+const twoDaysBefore = moment().subtract(2, 'days').valueOf()
+const three = moment().subtract(3, 'days').valueOf()
+const dayOf = moment().valueOf()
+
+// let testdate = moment(1695276000000).subtract(5, 'days').endOf('day').valueOf()
+console.log('??',schedulePlanner(1695276000000))
