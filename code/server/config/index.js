@@ -16,24 +16,18 @@ exports.scheduleRecurrence = {
 /// this always need to change
 
 
-exports.reportsMarker = process.env.ENV==='TEST' ? 'reports_3445656':null
-
+const baseCurrency = 'usd'
 
 /** @type {PaymentIntentCreateParams}  */
 exports.paymentIntentCreateParams = {
   capture_method: 'manual',
   // default amount we want to charge for lesson
   amount: 50000, // $500.00
-  currency: 'usd',
+  currency: baseCurrency,
   payment_method_types: ['card'],
   setup_future_usage: 'off_session',
 }
 
-/** @type {ProductCreateParams }  */
-exports.productOptions = {
-
-}
-
-
+exports.baseCurrency = baseCurrency
 exports.apiVersion = '2022-11-15'
 exports.clientDir = 'build'

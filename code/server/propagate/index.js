@@ -361,11 +361,11 @@ async function deletePaymentMethods(){
 
 
 
-// listCustomersDelete();
-// cancelSubSchedules()
-// deleteInvoices()
-// cancelPaymentIntents()
-// deletePaymentMethods()
+listCustomersDelete();
+cancelSubSchedules()
+deleteInvoices()
+cancelPaymentIntents()
+deletePaymentMethods()
 
 
 

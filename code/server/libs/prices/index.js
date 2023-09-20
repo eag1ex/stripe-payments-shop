@@ -6,8 +6,8 @@
  * @typedef {import('stripe').Stripe} Stripe
  * @typedef {import('../../types').Customer.LessonSession} LessonSession
  */
-// const {paymentIntentCreateParams}= require('../../config')
 
+const {baseCurrency} = require('../../config')
 
 /**
  * 
@@ -17,7 +17,7 @@
 exports.createPrice = async (stripe, metadata) => {
     const price = await stripe.prices.create({
         unit_amount: 2000,
-        currency: 'thb',
+        currency: baseCurrency,
        // recurring: {interval: 'month'},
         product: 'prod_ObzYq2T2wUiRt9',
       });

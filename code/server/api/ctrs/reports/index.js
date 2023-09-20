@@ -44,28 +44,28 @@ exports.calculateLessonTotal =
         },
       }
 
-      // list payment intent application fees for lessons 
-      const list = (await stripe.paymentIntents.list({ ...until, expand:['data.charges.data.balance_transaction']})).data
+      const lessonType = 'lessons-payment' 
 
-      console.log('calculateLessonTotal/list/fees',list.map(n=>({application_fee_amount:n.application_fee_amount, amount_received:n.amount_received, amount:n.amount, status:n.status}) ))
-     
+      // list all charges for lessons
+       const charges = (await stripe.charges.list({ ...until,  expand:['data.balance_transaction','data.payment_intent']})).data.filter(n=>n.status==='succeeded' && n.metadata?.type === lessonType)
 
+       console.log('list/charges',JSON.stringify(charges.map(n=>({amount:n.amount, amount_refunded:n.amount_refunded, paid:n.paid, status:n.status, balance_transaction:n.balance_transaction, payment_intent:n.payment_intent})),null,2))
 
-      const paymentTotal = list.filter(n=>n.status==='succeeded' && n.metadata?.type === 'lessons-payment' )
-      const piIds= paymentTotal.map(n=>n.id)
+       const paymentTotal = charges.filter(n=>n.paid && n.amount>=0 && n.amount_refunded===0)
 
-     const refundTotal = (await stripe.refunds.list({ ...until, expand:['data.payment_intent']})).data.filter(n=>n.status==='succeeded' && n.payment_intent?.metadata?.type === 'lessons-payment' && piIds.includes(n.payment_intent.id) && n.payment_intent.amount_received===n.amount)
+       // NOTE balance_transaction.fee currency reflects what card was used, so calculations will be off on local if i selected different country
+       const feeTotal = paymentTotal.filter(n=>n.balance_transaction)
+       
 
-
-      const refund_total= refundTotal.reduce((a, b) => a + b.amount, 0)
-      const feeTotal = (paymentTotal.reduce((a, b) => a + b.application_fee_amount, 0)) + refund_total
-
+   
+     // const refund_total= refundTotal.reduce((a, b) => a + b.amount_refunded, 0)
+      const fee_total = feeTotal.reduce((a, b) => a + b.balance_transaction.fee, 0)
       const payment_total = paymentTotal.reduce((a, b) => a + b.amount, 0)
-  console.log('feeTotal ', payment_total,feeTotal)
+
       const totals = {
-        payment_total,
-        fee_total:feeTotal,
-        net_total:payment_total-feeTotal,
+        payment_total:payment_total,
+        fee_total:fee_total,
+        net_total:payment_total-fee_total,
       }
       return res.status(200).send({...totals})
 

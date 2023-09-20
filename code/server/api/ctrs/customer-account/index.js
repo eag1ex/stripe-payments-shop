@@ -232,10 +232,10 @@ exports.findCustomersWithFailedPayments =
       }
 
       const list = (await stripe.paymentIntents.list({...until})).data
-      const errorList= list.filter(n=>!!n.last_payment_error)
+      const l= list.filter(n=>!!n.last_payment_error)
       
-      if(errorList.length){
-        console.log('[findCustomersWithFailedPayments][errorList]', JSON.stringify(errorList,null,2))
+      if(l.length){
+        console.log('[findCustomersWithFailedPayments]', JSON.stringify(l,null,2))
       }
     
 
@@ -270,12 +270,7 @@ exports.findCustomersWithFailedPayments =
       const results = []
 
       for (const pi of paymentIntents) {
-        if (!!pi.last_payment_error) {
-          const result = issuerDeclined(pi.last_payment_error)
-          if (result) {
-            results.push(cusFailedPaymentDto(pi, pi.last_payment_error))
-          }
-        }
+        if (pi.last_payment_error)  results.push(cusFailedPaymentDto(pi, 'issuer_declined'))
       }
 
 

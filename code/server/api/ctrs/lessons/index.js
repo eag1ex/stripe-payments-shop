@@ -85,6 +85,7 @@ exports.postLessons =
       }
 
       const setupIntent = await stripe.setupIntents.create({
+        
         customer: r.id,
         metadata: r.metadata,
       })
