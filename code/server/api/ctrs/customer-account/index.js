@@ -247,22 +247,21 @@ exports.findCustomersWithFailedPayments =
         })
       ).data
 
-      /**
-       *
-       * @param {LastPaymentError} last_payment_error
-       */
-      const issuerDeclined = (last_payment_error) => {
-        const errMsg = 'issuer_declined'
-        const customError =
-          (last_payment_error?.type.includes(errMsg) ||
-            last_payment_error?.code?.includes(errMsg) ||
-            last_payment_error?.decline_code?.includes(errMsg) ||
-            last_payment_error?.message.includes(errMsg)) &&
-          'issuer_declined'
-        return customError ? 'issuer_declined' : undefined
-      }
+      // /**
+      //  *
+      //  * @param {LastPaymentError} last_payment_error
+      //  */
+      // const issuerDeclined = (last_payment_error) => {
+      //   const errMsg = 'issuer_declined'
+      //   const customError =
+      //     (last_payment_error?.type.includes(errMsg) ||
+      //       last_payment_error?.code?.includes(errMsg) ||
+      //       last_payment_error?.decline_code?.includes(errMsg) ||
+      //       last_payment_error?.message.includes(errMsg)) &&
+      //     'issuer_declined'
+      //   return customError ? 'issuer_declined' : undefined
+      // }
 
-    
       
       /**
        * from dto() response object
