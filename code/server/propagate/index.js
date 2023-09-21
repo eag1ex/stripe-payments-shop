@@ -6,6 +6,7 @@ require("dotenv").config({ path: "../.env" });
 const moment = require("moment");
 const { apiVersion, clientDir } = require("../config");
 const { delay } = require("../utils");
+const {updateCustomerMeta} = require('../libs/customer')
 
 /** @type {Stripe} */
 const Stripe = require("stripe")(process.env.STRIPE_SECRET_KEY, { apiVersion });
@@ -384,6 +385,24 @@ async function updateCustomerMetadata(){
 //updateCustomerMetadata()
 
 
+async function customerMetadata() {
+   
+  const dateFrom = (num)=>moment().add(num,'days')
+
+  // in 5 days
+ const cus =  await updateCustomerMeta(Stripe, 'cus_Og6NokO3YxCG8B', {
+    date: dateFrom(0).format("MMM DD"),
+    first_lesson: dateFrom(0).format("MMM DD"),
+    time:dateFrom(0).format('LT'),
+    timestamp:dateFrom(0).valueOf(),
+    type: "lessons-payment"
+  })
+  console.log('cus/updated',cus.id, cus.metadata)
+}; 
+
+customerMetadata()
+
+
 
 // listCustomersDelete();
 // cancelSubSchedules()
@@ -394,42 +413,8 @@ async function updateCustomerMetadata(){
 
 
 
-// const trial_end_test = moment().add(30,'seconds').unix()
-// console.log(trial_end_test,moment.unix(trial_end_test).toString())
+// const fiveDaysOrAfter = moment(1695725777123).startOf('day').isBefore(moment().startOf('day').add(5, 'days').subtract(1,'seconds'))
+// const fiveDaysOrBefore = moment(1695725777123).isBefore(moment().endOf('day').add(5, 'days').add(1,'seconds'))
 
+//  console.log('fiveDaysOrAfter',fiveDaysOrBefore)
 
-// At 5 days before the scheduled lesson, we'll put a hold (i.e. authorize a pending payment) on the student's card. If this doesn't go through, then we can immediately start booking a new student for our instructor.
-// If a student cancels one or two days before their lesson, we'll capture half of the payment as a late cancellation fee.
-// On the morning of the lesson, we capture the payment in full (no refunds if students cancel on the day of).s
-// If an instructor has to shorten or cancel a lesson, then we'll send a partial or full refund. For peace of mind, we would like to manually control each of these steps.
-
-/**
- * 
- * @param {Number} timestamp 
- * @returns {'one_two_days_before'|'five_days_before'|'day_of'}
- */
-const schedulePlanner = (timestamp)=>{
-
- 
-  const bookingDay =  moment(timestamp).startOf('day').date()
-  const now = moment().startOf('day').date()
-  console.log(bookingDay, now)
-
-  if(now+5 ===bookingDay){
-    return 'five_days_before'
-  }
-  
-  if(bookingDay=== now+2  || now +1===bookingDay){
-    return 'one_two_days_before'
-  }
-  else return 'day_of'
-}
-
-const fiveDaysBefore = moment().subtract(5, 'days').endOf('day').valueOf()
-const oneDaysBefore = moment().subtract(1, 'days').valueOf()
-const twoDaysBefore = moment().subtract(2, 'days').valueOf()
-const three = moment().subtract(3, 'days').valueOf()
-const dayOf = moment().valueOf()
-
-// let testdate = moment(1695276000000).subtract(5, 'days').endOf('day').valueOf()
-console.log('??',schedulePlanner(1695276000000))

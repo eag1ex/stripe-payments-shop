@@ -3,8 +3,11 @@
 /** @typedef {import('stripe').Stripe.PaymentIntent} PaymentIntent */
 /** @typedef {import('stripe').Stripe.PaymentIntent.Status} PaymentIntentStatus */
 /** @typedef {import('../types').Customer.LessonSession} LessonSession */
+/** @typedef {import('../types').SchedulePlanner.specificTimeSlots} SpecificTimeSlots */
+/** @typedef {import('../types').SchedulePlanner.timeSlots} TimeSlots */
 
-const moment = require("moment");
+
+const moment = require('moment')
 
 exports.customerMetadata = ({ type, date, time, timestamp }) => {
   return {
@@ -59,51 +62,44 @@ exports.cusFailedPaymentDto = (pi, error) => {
   }
 }
 
-
-
 /**
- * 
- * @param {Number} _timestamp 
- * @param {LessonSession?}  session
- * @returns {'one_two_days_before'|'five_days_before'|'day_of'}
+ * Time schedule for our payment system
+ * @param {Number} _timestamp
+ * @param {LessonSession}  session
+ * @param {SpecificTimeSlots} specific to only check for specific time, (limited availability)
+ * @returns {TimeSlots}
  */
-exports.schedulePlanner = (_timestamp,session )=>{
-
-  // const timestamp = Number(_timestamp)
-
-  // // if is 5 days before lesson
-  // const isFiveDaysBefore = moment(timestamp).isBetween(moment().subtract(5, 'days').startOf('day'), moment().subtract(4, 'days').startOf('day'))
-  // if(isFiveDaysBefore){
-  //   console.log('customer is 5 days before lesson', JSON.stringify(session,null,2))
-  //   return 'five_days_before'
-  // }
-  // // if is one or two days before lesson
-  // const isOneOrTwoDaysBefore = moment(timestamp).isBetween(moment().subtract(2, 'days').startOf('day'), moment().subtract(1, 'days').endOf('day'))
-
-  // if(isOneOrTwoDaysBefore){
-  //   console.log('customer is one or two days before lesson',  JSON.stringify(session,null,2))
-  //   return 'one_two_days_before'
-  // }
-
-  // else {
-  //   console.log('customer is day of lesson',  JSON.stringify(session,null,2))
-  //   return 'day_of'
-  // }
+// @ts-ignore
+exports.schedulePlanner = (_timestamp, session, specific='') => {
   const timestamp = Number(_timestamp)
-  const bookingDay =  moment(timestamp).startOf('day').date()
-  const now = moment().startOf('day').date()
-  console.log(bookingDay, now)
 
-  if(now+5 ===bookingDay){
-    console.log('customer is 5 days before lesson', JSON.stringify(session,null,2))
-    return 'five_days_before'
-  }
-  
-  if(bookingDay=== now+2  || now +1===bookingDay){
-    console.log('customer is one or two days before lesson',  JSON.stringify(session,null,2))
-    return 'one_two_days_before'
-  }
-  else{
-    console.log('customer is day of lesson',  JSON.stringify(session,null,2))
-    return 'day_of'}
+  const isBeforeFive = moment(timestamp).isAfter(moment().startOf('day').add(6, 'days'))
+  const atFiveDays = moment(timestamp).isBetween(
+    moment().startOf('day').add(5, 'days'),
+    moment().endOf('day').add(5, 'days').add(5, 'seconds'),
+  )
+  const lessThenFive = moment(timestamp).isBetween(
+    moment().startOf('day').add(3, 'days'),
+    moment().endOf('day').add(5, 'days').add(5, 'seconds'),
+  )
+  const twoToOneDays = moment(timestamp).isBetween(
+    moment().startOf('day').add(1, 'days'),
+    moment().endOf('day').add(2, 'days').add(1, 'seconds'),
+  )
+  const isOnDay = moment(timestamp).isBetween(
+    moment().startOf('day'),
+    moment().endOf('day').add(5, 'seconds'),
+  )
+
+  const fiveDaysOrAfter= moment(timestamp).isBefore(moment().endOf('day').add(5, 'days').add(1,'seconds'))
+
+  const tests = [(fiveDaysOrAfter && specific==='five_days_or_after') && 'five_days_or_after',isBeforeFive && 'too_early',atFiveDays && 'five_days_due',lessThenFive && 'less_then_five_days',twoToOneDays &&'one_two_days_due',isOnDay &&'day_of','pass_due']
+
+  const match = tests.filter(n=>!!n)[0]
+  console.log('customer is', `${match}`, JSON.stringify(session, null, 2))
+
+
+  // @ts-ignore
+return tests.filter(n=>!!n)[0] ||'pass_due'
+
 }

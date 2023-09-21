@@ -21,8 +21,8 @@ exports.refundLesson =
    * @param {Response} res
    **/
   async (req, res) => {
-    const { payment_intent_id, amount } = req.body
-
+    const { payment_intent_id, amount:_amount } = req.body
+    const amount = Number(_amount || 0) 
     if (!payment_intent_id) {
       return res.status(400).send({
         error: {
@@ -31,47 +31,61 @@ exports.refundLesson =
       })
     }
 
+    let isDay='not_set'
     try {
       // check payment status to see if we can do refund or cancel
       const pi = await stripe.paymentIntents.retrieve(payment_intent_id, { expand: ['customer'] })
 
+     
       /**
        * @type {CustomerMetadata}
        */
       const metadata = pi.customer.metadata
-      const isDay = schedulePlanner(metadata.timestamp, metadata)
+      isDay = schedulePlanner(metadata.timestamp, metadata)
+      const five_days_or_after = schedulePlanner(metadata.timestamp, metadata,'five_days_or_after')==='five_days_or_after'
+      const billable = pi.amount_received
+      let refundAmount =amount>0 && amount !== billable ? amount : billable
 
-      let refundAmount =
-        !!Number(amount) && Number(amount) !== pi.amount_received
-          ? Number(amount)
-          : pi.amount_received
-
-      if (isDay === 'one_two_days_before') {
-
-        refundAmount = Number(amount)>0 ? Number(amount): parseInt(pi.amount - pi.amount/ 2)
-          // pi.amount_received > 0
-          //   ? parseInt(pi.amount_received - pi.amount_received / 2)
-          //   : parseInt(pi.amount - pi.amount / 2) || -1
+      // If a student cancels one or two days before their lesson, we'll capture half of the payment as a late cancellation fee.
+      // For peace of mind, we would like to manually control each of these steps.
+      // >> >> if amount and different amount_received we can set difference
+      if (isDay === 'one_two_days_due') {
+        refundAmount = amount>0 && amount!==billable? amount: parseInt(billable- billable/ 2)
       }
 
-      if (isDay === 'day_of') {
-        refundAmount = Number(amount)>0 ? Number(amount) : pi.amount
+      // On the morning of the lesson, we capture the payment in full (no refunds if students cancel on the day of).s
+      // >>  For peace of mind, we would like to manually control each of these steps.
+      // >> >> if amount and different amount_received we can set difference
+      if (isDay === 'day_of' || isDay==='pass_due') {
+        refundAmount = amount>0 && amount!==billable ? amount: billable
       }
-      console.log('refund is',refundAmount,pi.amount_received )
+
+      console.log('trying to refunds.create', {
+        amount,
+        amount_capturable: pi.amount_capturable,
+        pi_amount: pi.amount,
+        refundAmount,
+        billable
+      })
+
       const refund = await stripe.refunds.create({
         amount: refundAmount,
         payment_intent: payment_intent_id,
+        metadata
         //  refund_application_fee: true,
       })
-     
 
+      console.log('trying to refunds.create', {
+        refund
+      })
+     
       return res.status(200).send({
-        ...(isDay === 'one_two_days_before'
-          ? { message: '[one_two_days_before] Refund 50% of lesson' }
-          : isDay === 'day_of'
-          ? { message: '[day_of] Full refund available' }
-          : isDay === 'five_days_before'
-          ? { message: '[five_days_before] Any refund of lesson available' }
+        ...(isDay === 'one_two_days_due'
+          ? { message: '[one_two_days_before] Refund 50% of lesson, unless {amount>0} different then amount_received' }
+          : isDay === 'day_of' || isDay==='pass_due'
+          ? { message: '[day_of] No refund, unless {amount>0} different then amount_received' }
+          : five_days_or_after
+          ? { message: '[five_days_before] Max refund of lesson available' }
           : {}),
         refund: refund.id,
       })
@@ -80,6 +94,7 @@ exports.refundLesson =
       const error = err
       console.log('[refund-lesson][error]', error.message)
       return res.status(400).send({
+        ...( isDay==='pass_due' ? { message: '[day_of] No refund, unless {amount>0} different then amount_received' } : {}),
         error: {
           message: error?.message,
           code: error.code,

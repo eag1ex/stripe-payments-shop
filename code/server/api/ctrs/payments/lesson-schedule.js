@@ -1,13 +1,13 @@
 /** @typedef {import('stripe').Stripe} Stripe */
+/** @typedef {import('stripe').Stripe.PaymentIntent} PaymentIntent */
 /** @typedef {import('stripe').Stripe.errors.StripeAPIError} StripeAPIError */
 /** @typedef {import('stripe').Stripe.Customer} StripeCustomer */
 /** @typedef {import('express').Request} Request */
 /** @typedef {import('express').Response} Response */
 /** @typedef {import('../../../types').Customer.Metadata} CustomerMetadata */
 
-
-const {baseCurrency} = require('../../../config') 
-const {schedulePlanner} = require('../../../utils')
+const { baseCurrency } = require('../../../config')
+const { schedulePlanner } = require('../../../utils')
 
 /**
  * @POST
@@ -22,9 +22,14 @@ exports.scheduleLesson =
    * @param {Response} res
    **/
   async (req, res) => {
-    const { customer_id, amount, description } = req.body
+    const { customer_id, amount: _amount, description } = req.body
+    const amount = Number(_amount||0)
 
+    let five_days_or_after
+    let isDay
+    let piId
     try {
+
       if (!customer_id || !amount || !description) {
         return res.status(400).send({
           error: {
@@ -33,6 +38,7 @@ exports.scheduleLesson =
         })
       }
 
+
       const paymentMethod = (
         await stripe.customers.listPaymentMethods(customer_id, {
           type: 'card',
@@ -40,77 +46,107 @@ exports.scheduleLesson =
         })
       ).data[0]
 
+      // check customer previous successful payment intents
+      
+      const customerIntentsList = (await stripe.paymentIntents.list({ customer: customer_id })).data
+      const successfulIntents = customerIntentsList.filter(n=>n.status==='succeeded' && n.metadata?.type === 'lessons-payment')
+
+      console.log('successfulIntents/list',successfulIntents.length)
+
       /** @type {StripeCustomer} */
       const customer = paymentMethod.customer
 
-      const isDay = schedulePlanner(customer.metadata.timestamp,customer.metadata)
 
-
-
-      const piFound = (await stripe.paymentIntents.list({ customer: customer_id })).data.filter(n=>n.status==='requires_confirmation')[0]
-
-      if (piFound) {
-
-        const piUpdated = await stripe.paymentIntents.update(piFound.id, {
-          amount,
-          ...(isDay==='five_days_before' ? { capture_method: 'manual' } : {}),
-          setup_future_usage: 'off_session',
-          description: description.toString(),
-          payment_method: paymentMethod.id,
-        })
-
-        if (isDay==='five_days_before') {
-
-          const paymentIntentConfirm = await stripe.paymentIntents.confirm(piUpdated.id, {
-            payment_method: 'pm_card_visa',
-            capture_method: 'manual',
-            setup_future_usage: 'off_session',
-          })
-
-          return res.status(200).send({
-            message: 'Put a hold (i.e. authorize a pending payment) / updated',
-            payment: {
-              ...paymentIntentConfirm,
-            },
-          })
+        /**
+       * Confirm payment
+       * @param {PaymentIntent} pi 
+       * @returns 
+       */
+        const confirmPayment = async(pi)=>{
+          return await stripe.paymentIntents.confirm(pi?.id, {
+                payment_method: 'pm_card_visa',
+                capture_method: 'manual',
+                setup_future_usage: 'off_session',
+              })
         }
+  
+    
+      isDay = schedulePlanner(customer.metadata.timestamp, customer.metadata)
 
-        return res.status(200).send({
-          message: isDay==='one_two_days_before' ? 'Put a hold (i.e. authorize a pending payment)'
-            :'payment intent updated',
-          payment: {
-            ...piUpdated,
-          },
-        })
-      }
+      five_days_or_after = schedulePlanner(
+        customer.metadata.timestamp,
+        customer.metadata,
+        'five_days_or_after',
+      ) === 'five_days_or_after'
+  
+        
+      // allow same customer to book multiple lessons only after each lesson is completed or canceled  
+      let pi = customerIntentsList.filter(n=>n.status!=='canceled'&& n.status!=='succeeded' && n.status!=='processing').filter(
+        (n) => n.status === five_days_or_after ? 'requires_capture' : 'requires_confirmation',
+      )[0];
+      piId = pi?.id;
+       
+      
 
- 
-      const piCreate = await stripe.paymentIntents.create({
-        currency: baseCurrency,
-        payment_method_types: ['card'],
-        setup_future_usage: 'off_session',
-        ...(isDay==='five_days_before' ? {capture_method:'manual'} : {}),
-        amount,
-        description: description.toString(),
-        payment_method: paymentMethod.id,
-        metadata: { ...customer.metadata, type: 'lessons-payment' },
-        customer: customer.id,
-        receipt_email: customer.email,
+      // we can still update the lesson if it was already created before capture was due 
+      pi =
+        (pi?.status === 'requires_confirmation' && !five_days_or_after)
+          ? await stripe.paymentIntents.update(pi.id, {
+              amount, // instructor can update this setting if the lesson was booked prior to 5 days
+              setup_future_usage: 'off_session',
+              description: description.toString(),
+              payment_method: paymentMethod.id,
+              metadata: { ...customer.metadata, type: 'lessons-payment' },
+            })
+          : pi;
 
-        // payment_method_options: {
-        //   card: {
-        //  so we can capture multiples: https://stripe.com/docs/payments/multicapture
-        //     request_multicapture: 'if_available',
-        //   },
-        // },
-      })
+         
+      // in case we created a payment intent but didn't capture it, and its already due past 5 days
+    if(five_days_or_after && !!pi) pi= await confirmPayment(pi)
 
- 
+       
+    let piFound = pi?.status === 'requires_confirmation';
+
+  
+     pi = !pi 
+        ? await stripe.paymentIntents.create({
+            capture_method: 'manual',
+            currency: baseCurrency,
+            payment_method_types: ['card'],
+            setup_future_usage: 'off_session',
+            ...(isDay === 'five_days_due' ? { capture_method: 'manual' } : {}),
+            amount,
+            description: description.toString(),
+            payment_method: paymentMethod.id,
+            metadata: { ...customer.metadata, type: 'lessons-payment' },
+            customer: customer.id,
+            receipt_email: customer.email, 
+            // payment_method_options: {
+            //   card: {
+            //  so we can capture multiples: https://stripe.com/docs/payments/multicapture
+            //     request_multicapture: 'if_available',
+            //   },
+            // },
+          })
+        : pi
+       
+        
+      // if not already confirmed    
+      if(five_days_or_after && !!pi && pi.status!=='requires_capture') pi = await confirmPayment(pi)   
+
+      if (!pi) throw new Error('payment intent not created')
+
+      const message = five_days_or_after
+        ? '[five_days_or_after] Put a hold (i.e. authorize a pending payment)'
+        : piFound
+        ? 'Payment intent updated'
+        : 'Payment intent created'
 
       return res.status(200).send({
-        message: isDay==='five_days_before' ? 'Put a hold (i.e. authorize a pending payment)': 'payment intent created',
+        ...(successfulIntents.length>0 ? { recurring_customer: `Returning customer (${successfulIntents.length} x purchases)` } : {}),
+        message,
         payment: {
-          ...piCreate,
+          ...(pi || {}),
         },
       })
     } catch (err) {
@@ -118,8 +154,12 @@ exports.scheduleLesson =
       const error = err
 
       console.error('[schedule-lesson][error]', error)
-
       return res.status(400).send({
+        ...(five_days_or_after
+          ? {
+              message: `[five_days_or_after] Put a hold (i.e. authorize a pending payment), payment_intent_id: ${piId}`,
+            }
+          : {}),
         error: {
           message: error?.message,
           code: error.code,

@@ -22,4 +22,9 @@ export namespace Customer {
     }
 } 
 
+export namespace SchedulePlanner {
+    export type specificTimeSlots = 'five_days_or_after'
+    export type timeSlots = 'not_set'|'too_early'|'five_days_due'|'less_then_five_days'| 'one_two_days_due'|'day_of'|'pass_due'| specificTimeSlots
+    
+}
 

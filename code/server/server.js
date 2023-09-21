@@ -169,6 +169,27 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     const cus = data.object
   }
 
+  if (eventType === 'customer.updated') {
+    /** @type {Customer} */
+    const cus = data.object
+    // try{
+    //    update pi metadata with customer metadata
+    //    /** @type {Customer} */
+    //   const cus = await stripe.customers.retrieve(pi.customer)
+    //   const piUpdated = await stripe.paymentIntents.update(pi.id, {
+    //     metadata: {...cus.metadata},
+    //   })
+    //   console.log('[webhook][payment_intent][updated]', piUpdated.id)
+    // }catch(err){
+
+    // }
+  }
+
+  if (eventType === 'payment_intent.created') {
+    /** @type {PaymentIntent} */
+    const pi = data.object
+
+  }
 
   // try to manually invoice customer if its due
   if (eventType === 'invoice.created') {
