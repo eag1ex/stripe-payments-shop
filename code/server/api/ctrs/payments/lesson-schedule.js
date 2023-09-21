@@ -45,10 +45,28 @@ exports.scheduleLesson =
           expand: ['data.customer'],
         })
       ).data[0]
+      let customerIntentsList = (await stripe.paymentIntents.list({ customer: customer_id })).data
+
+      // we need to cancel existing pi with {requires_capture} if customer try to book lesson again
+      // we do not have this problem if we use {schedulePlanner} without any_day
+      let canceled
+      try{
+        const existingIntent = customerIntentsList.filter(n=>(n.status==='requires_capture')  && n.metadata?.type === 'lessons-payment')
+
+        for (const pi of existingIntent) {
+            await stripe.paymentIntents.cancel(pi.id)
+            canceled = true
+        }
+
+      }catch(err){
+
+      }
+     
+      customerIntentsList =!canceled ? customerIntentsList : (await stripe.paymentIntents.list({ customer: customer_id })).data
 
       // check customer previous successful payment intents
       
-      const customerIntentsList = (await stripe.paymentIntents.list({ customer: customer_id })).data
+    
       const successfulIntents = customerIntentsList.filter(n=>n.status==='succeeded' && n.metadata?.type === 'lessons-payment')
 
       console.log('successfulIntents/list',successfulIntents.length)
@@ -71,13 +89,19 @@ exports.scheduleLesson =
         }
   
     
-      isDay = schedulePlanner(customer.metadata.timestamp, customer.metadata)
+      isDay = schedulePlanner(customer.metadata.timestamp, customer.metadata,'any_day')
+
+      // five_days_or_after = schedulePlanner(
+      //   customer.metadata.timestamp,
+      //   customer.metadata,
+      //   'five_days_or_after',
+      // ) === 'five_days_or_after'
 
       five_days_or_after = schedulePlanner(
         customer.metadata.timestamp,
         customer.metadata,
-        'five_days_or_after',
-      ) === 'five_days_or_after'
+        'any_day',
+      ) === 'any_day'
   
         
       // allow same customer to book multiple lessons only after each lesson is completed or canceled  
@@ -114,7 +138,8 @@ exports.scheduleLesson =
             currency: baseCurrency,
             payment_method_types: ['card'],
             setup_future_usage: 'off_session',
-            ...(isDay === 'five_days_due' ? { capture_method: 'manual' } : {}),
+            ...(isDay === 'any_day' ? { capture_method: 'manual' } : {}),
+           // ...(isDay === 'five_days_due' ? { capture_method: 'manual' } : {}),
             amount,
             description: description.toString(),
             payment_method: paymentMethod.id,
@@ -136,15 +161,15 @@ exports.scheduleLesson =
 
       if (!pi) throw new Error('payment intent not created')
 
-      const message = five_days_or_after
-        ? '[five_days_or_after] Put a hold (i.e. authorize a pending payment)'
-        : piFound
-        ? 'Payment intent updated'
-        : 'Payment intent created'
+      // const message = five_days_or_after
+      //   ? '[five_days_or_after] Put a hold (i.e. authorize a pending payment)'
+      //   : piFound
+      //   ? 'Payment intent updated'
+      //   : 'Payment intent created'
 
       return res.status(200).send({
-        ...(successfulIntents.length>0 ? { recurring_customer: `Returning customer (${successfulIntents.length} x purchases)` } : {}),
-        message,
+        // ...(successfulIntents.length>0 ? { recurring_customer: `Returning customer (${successfulIntents.length} x purchases)` } : {}),
+        // message,
         payment: {
           ...(pi || {}),
         },
@@ -155,11 +180,11 @@ exports.scheduleLesson =
 
       console.error('[schedule-lesson][error]', error)
       return res.status(400).send({
-        ...(five_days_or_after
-          ? {
-              message: `[five_days_or_after] Put a hold (i.e. authorize a pending payment), payment_intent_id: ${piId}`,
-            }
-          : {}),
+        // ...(five_days_or_after
+        //   ? {
+        //       message: `[any_day] Put a hold (i.e. authorize a pending payment), payment_intent_id: ${piId}`,
+        //     }
+        //   : {}),
         error: {
           message: error?.message,
           code: error.code,

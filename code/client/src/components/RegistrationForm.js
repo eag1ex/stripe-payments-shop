@@ -41,7 +41,7 @@ const RegistrationForm = (props) => {
     if (field === 'learnerName') setLearnerName(value)
   }
 
-  console.log('[RegistrationForm][session][selected]', session)
+  // console.log('[RegistrationForm][session][selected]', session)
 
   const handleClickForPaymentElement = async () => {
     if (

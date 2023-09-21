@@ -82,13 +82,17 @@ exports.postLessons =
           
           let index = 0 
           // these lessons reflect the order of the lessons in the UI
-          if (r.metadata.type === 'zero_lesson') index = 0
-          if (r.metadata.type === 'one_lesson') index = 1
-          if (r.metadata.type === 'two_lesson') index = 2
-          if (r.metadata.type === 'three_lesson') index = 3
-          if (r.metadata.type === 'four_lesson') index = 4
-          if (r.metadata.type === 'five_lesson') index = 5
-          if (r.metadata.type === 'six_lesson') index = 6
+          // if (r.metadata.type === 'zero_lesson') index = 0
+          // if (r.metadata.type === 'one_lesson') index = 1
+          // if (r.metadata.type === 'two_lesson') index = 2
+          // if (r.metadata.type === 'three_lesson') index = 3
+          // if (r.metadata.type === 'four_lesson') index = 4
+          // if (r.metadata.type === 'five_lesson') index = 5
+          // if (r.metadata.type === 'six_lesson') index = 6
+
+          if (r.metadata.type === 'first_lesson') index = 0
+          if (r.metadata.type === 'second_lesson') index = 1
+          if (r.metadata.type === 'third_lesson') index = 2
    
           return index
         })()

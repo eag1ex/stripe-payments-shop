@@ -76,11 +76,11 @@ export const customerFromSession = () => {
 }
 
 //format session's date
-
+//  * @param {'zero'|'one'| 'two'|'three'|'four' |'five' |'six'} id 
 /**
  * 
  * @param {*} index 
- * @param {'zero'|'one'| 'two'|'three'|'four' |'five' |'six'} id 
+ * @param {'first'|'second'| 'third'} id 
  * @param {Date} session 
  * @param {*} time 
  * @returns 
@@ -116,35 +116,37 @@ export const formatSession = (index, id, session, time) => {
   let timestamp = session.getTime()
 
   
-  if(id==='zero') {
-    timestamp = moment(session.getTime()).set({hour:9,minute:0,second:0,millisecond:0}).valueOf()
-  }
+  // if(id==='zero') {
+  //   timestamp = moment(session.getTime()).set({hour:9,minute:0,second:0,millisecond:0}).valueOf()
+  //   id='first'
+  // }
 
-  if(id==='one') {
-    timestamp = moment(session.getTime()).set({hour:13,minute:0,second:0,millisecond:0}).valueOf()
-  }
+  // if(id==='one') {
+  //   timestamp = moment(session.getTime()).set({hour:13,minute:0,second:0,millisecond:0}).valueOf()
+  //   id='second'
+  // }
 
-  if(id==='two') {
-    timestamp=  moment(session.getTime()).set({hour:16,minute:0,second:0,millisecond:0}).valueOf()
-  }
+  // if(id==='two') {
+  //   timestamp=  moment(session.getTime()).set({hour:16,minute:0,second:0,millisecond:0}).valueOf()
+  //   id='third'
+  // }
 
-  if(id==='three') {
+  // if(id==='three') {
+  //   timestamp = moment(session.getTime()).set({hour:15,minute:0,second:0,millisecond:0}).valueOf()
+  //   id='fourth'
+  // }
+
+  if(id==='first') {
     timestamp = moment(session.getTime()).set({hour:15,minute:0,second:0,millisecond:0}).valueOf()
   }
 
-  if(id==='four') {
-    timestamp = moment(session.getTime()).set({hour:15,minute:0,second:0,millisecond:0}).valueOf()
-  }
-
-  if(id==='five') {
+  if(id==='second') {
     timestamp = moment(session.getTime()).set({hour:16,minute:0,second:0,millisecond:0}).valueOf()
   }
 
-  if(id==='six') {
+  if(id==='third') {
     timestamp = moment(session.getTime()).set({hour:17,minute:0,second:0,millisecond:0}).valueOf()
   }
-
-
 
   return { index, id, title, date, time, selected: "", type, timestamp };
 };

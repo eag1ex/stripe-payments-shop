@@ -31,8 +31,6 @@ const Lessons = (props) => {
     setDetails(
       `You have requested a lesson for ${items[index].title} \n Please complete this form to reserve your lesson.`
     );
-
-    console.log('selected is ??', sessions)
   };
   //Load sessions info.
   useEffect(() => {
@@ -43,27 +41,27 @@ const Lessons = (props) => {
      * Refer to {formatSession()} method for setting moment.js timestamp's
      */
 
-    session.setDate(session.getDate());
-    items.push(formatSession(0, "zero", session, "9:00 a.m."));
+    // session.setDate(session.getDate());
+    // items.push(formatSession(0, "zero", session, "9:00 a.m."));
 
-    session.setDate(session.getDate() + 1);
-    items.push(formatSession(1, "one", session, "1:00 p.m."));
+    // session.setDate(session.getDate() + 1);
+    // items.push(formatSession(1, "one", session, "1:00 p.m."));
 
-    session.setDate(session.getDate() + 1);
-    items.push(formatSession(2, "two", session, "4:00 p.m."));
+    // session.setDate(session.getDate() + 1);
+    // items.push(formatSession(2, "two", session, "4:00 p.m."));
     
-    session.setDate(session.getDate() + 3);
-    items.push(formatSession(3, "three", session, "3:00 p.m."));
+    // session.setDate(session.getDate() + 3);
+    // items.push(formatSession(3, "three", session, "3:00 p.m."));
 
 
     session.setDate(session.getDate() + 9);
-    items.push(formatSession(4, "four", session, "3:00 p.m."));
+    items.push(formatSession(0, 'first', session, "3:00 p.m."));
 
     session.setDate(session.getDate() + 5);
-    items.push(formatSession(5, "five", session, "4:00 p.m."));
+    items.push(formatSession(1, 'second', session, "4:00 p.m."));
 
     session.setDate(session.getDate() + 7);
-    items.push(formatSession(6, "six", session, "5:00 p.m."));
+    items.push(formatSession(2, 'third', session, "5:00 p.m."));
 
 
 
@@ -101,6 +99,7 @@ const Lessons = (props) => {
           {sessions.map((session,inx) => (
             <div
               className={`lesson-card ${session.selected}`}
+              // key={session.index}
               key={`${session.index +inx}`}
             >
               <div className="lesson-info">
