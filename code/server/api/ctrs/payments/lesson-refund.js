@@ -42,24 +42,24 @@ exports.refundLesson =
        */
       const metadata = pi.customer.metadata
       isDay = schedulePlanner(metadata.timestamp, metadata)
-      // const five_days_or_after = schedulePlanner(metadata.timestamp, metadata,'five_days_or_after')==='five_days_or_after'
-      const five_days_or_after = schedulePlanner(metadata.timestamp, metadata,'any_day')==='any_day'
+      const five_days_or_after = schedulePlanner(metadata.timestamp, metadata,'five_days_or_after')==='five_days_or_after'
+      // const five_days_or_after = schedulePlanner(metadata.timestamp, metadata,'any_day')==='any_day'
       const billable = pi.amount_received
       let refundAmount =amount>0 && amount !== billable ? amount : billable
 
       // If a student cancels one or two days before their lesson, we'll capture half of the payment as a late cancellation fee.
       // For peace of mind, we would like to manually control each of these steps.
       // >> >> if amount and different amount_received we can set difference
-      // if (isDay === 'one_two_days_due') {
-      //   refundAmount = amount>0 && amount!==billable? amount: parseInt(billable- billable/ 2)
-      // }
+      if (isDay === 'one_two_days_due') {
+        refundAmount = amount>0 && amount!==billable? amount: parseInt(billable- billable/ 2)
+      }
 
       // On the morning of the lesson, we capture the payment in full (no refunds if students cancel on the day of).s
       // >>  For peace of mind, we would like to manually control each of these steps.
       // >> >> if amount and different amount_received we can set difference
-      // if (isDay === 'day_of' || isDay==='pass_due') {
-      //   refundAmount = amount>0 && amount!==billable ? amount: billable
-      // }
+      if (isDay === 'day_of' || isDay==='pass_due') {
+        refundAmount = amount>0 && amount!==billable ? amount: billable
+      }
 
       // console.log('trying to refunds.create', {
       //   amount,
@@ -81,13 +81,13 @@ exports.refundLesson =
       // })
      
       return res.status(200).send({
-        // ...(isDay === 'one_two_days_due'
-        //   ? { message: '[one_two_days_before] Refund 50% of lesson, unless {amount>0} different then amount_received' }
-        //   : isDay === 'day_of' || isDay==='pass_due'
-        //   ? { message: '[day_of] No refund, unless {amount>0} different then amount_received' }
-        //   : five_days_or_after
-        //   ? { message: '[five_days_before] Max refund of lesson available' }
-        //   : {}),
+        ...(isDay === 'one_two_days_due'
+          ? { message: '[one_two_days_before] Refund 50% of lesson, unless {amount>0} different then amount_received' }
+          : isDay === 'day_of' || isDay==='pass_due'
+          ? { message: '[day_of] No refund, unless {amount>0} different then amount_received' }
+          : five_days_or_after
+          ? { message: '[five_days_before] Max refund of lesson available' }
+          : {}),
         refund: refund.id,
       })
     } catch (err) {

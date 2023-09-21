@@ -64,7 +64,7 @@ exports.cusFailedPaymentDto = (pi, error) => {
 
 /**
  * MAJOR UPDATE the requirement in the brief does not comply with the unit tests we we need to disable validation and allow for any date for not so the unit test can pass
- * 
+ * @NOTES specific==='any_day' overrides day slot rules
  * 
  * Time schedule for our payment system
  * @param {Number} _timestamp
@@ -99,9 +99,10 @@ exports.schedulePlanner = (_timestamp, session, specific='') => {
 
   const tests = [(fiveDaysOrAfter && specific==='five_days_or_after') && 'five_days_or_after',isBeforeFive && 'too_early',atFiveDays && 'five_days_due',lessThenFive && 'less_then_five_days',twoToOneDays &&'one_two_days_due',isOnDay &&'day_of','pass_due']
 
-  
+  // overrides specific time slot rules
  if(specific==='any_day') {
   console.log('to comply with unit test requirement, we had to disable {schedulePlanner}', `customer is:`, JSON.stringify(session, null, 2))
+
   return 'any_day'
  }
 
