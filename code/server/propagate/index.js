@@ -388,13 +388,12 @@ async function updateCustomerMetadata(){
 async function customerMetadata() {
    
   const dateFrom = (num)=>moment().add(num,'days')
-
-  // in 5 days
- const cus =  await updateCustomerMeta(Stripe, 'cus_Og6NokO3YxCG8B', {
-    date: dateFrom(0).format("MMM DD"),
-    first_lesson: dateFrom(0).format("MMM DD"),
-    time:dateFrom(0).format('LT'),
-    timestamp:dateFrom(0).valueOf(),
+ const days = -2
+ const cus = await updateCustomerMeta(Stripe, 'cus_OgM57PVG38Oocu', {
+    date: dateFrom(days).format("MMM DD"),
+    first_lesson: dateFrom(days).format("MMM DD"),
+    time:dateFrom(days).format('LT'),
+    timestamp:dateFrom(days).valueOf(),
     type: "lessons-payment"
   })
   console.log('cus/updated',cus.id, cus.metadata)

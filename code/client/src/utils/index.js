@@ -34,6 +34,16 @@ export const delay = (time = 0) => {
   })
 }
 
+export const metaData = ({ type, date, time,timestamp,id }) => {
+  return {
+    id,
+    type,
+    date,
+    time,
+    timestamp
+  }
+}
+
 export const errorHandler = async (errResponse) => {
   try {
     const r = (await errResponse.json()) || {}
@@ -68,12 +78,34 @@ export const checkoutResp = (d) => {
  */
 export const customerFromSession = () => {
   const customer = {
+    timestamp: Number(sessionStorage.getItem('timestamp')),
     email: sessionStorage.getItem('customerEmail'),
     name: sessionStorage.getItem('customerName'),
     customerId: sessionStorage.getItem('customerId'),
   }
   return customer
 }
+
+/**
+ * Set customer session
+ */
+export const setCustomerSession = ({ name, email, customerId,timestamp }) => {
+  if (name) sessionStorage.setItem('customerEmail', email)
+  if (email) sessionStorage.setItem('customerName', name)
+  if (customerId) sessionStorage.setItem('customerId', customerId)
+  if (timestamp) sessionStorage.setItem('timestamp', timestamp)
+
+}
+
+export const delCustomerSession = () => {
+  sessionStorage.removeItem('customerEmail')
+  sessionStorage.removeItem('customerName')
+  sessionStorage.removeItem('customerId')
+  sessionStorage.removeItem('timestamp')
+
+}
+
+
 
 //format session's date
 //  * @param {'zero'|'one'| 'two'|'three'|'four' |'five' |'six'} id 
@@ -151,19 +183,3 @@ export const formatSession = (index, id, session, time) => {
   return { index, id, title, date, time, selected: "", type, timestamp };
 };
 
-
-
-/**
- * Set customer session
- */
-export const setCustomerSession = ({ name, email, customerId }) => {
-  if (name) sessionStorage.setItem('customerEmail', email)
-  if (email) sessionStorage.setItem('customerName', name)
-  if (customerId) sessionStorage.setItem('customerId', customerId)
-}
-
-export const delCustomerSession = () => {
-  sessionStorage.removeItem('customerEmail')
-  sessionStorage.removeItem('customerName')
-  sessionStorage.removeItem('customerId')
-}

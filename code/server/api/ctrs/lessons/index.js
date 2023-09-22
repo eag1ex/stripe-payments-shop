@@ -8,28 +8,28 @@ const { resolve } = require('path')
 const fs = require('fs')
 const { customerMetadata } = require('../../../utils')
 
-/**
- * @GET
- * @api /lessons/
- * @param {Stripe} stripe
- * @returns
- */
-exports.getLessons =
-  (stripe) =>
-  /**
-   * @param {Request} req
-   * @param {Response} res
-   **/
-  async (req, res) => {
-    try {
-      const path = resolve(`${process.env.STATIC_DIR}/lessons.html`)
-      if (!fs.existsSync(path)) throw Error()
-      res.sendFile(path)
-    } catch (error) {
-      const path = resolve(`${process.env.STATIC_DIR}/static-file-error.html`)
-      res.sendFile(path)
-    }
-  }
+// /**
+//  * @GET
+//  * @api /lessons/
+//  * @param {Stripe} stripe
+//  * @returns
+//  */
+// exports.getLessons =
+//   (stripe) =>
+//   /**
+//    * @param {Request} req
+//    * @param {Response} res
+//    **/
+//   async (req, res) => {
+//     try {
+//       const path = resolve(`${process.env.STATIC_DIR}/lessons.html`)
+//       if (!fs.existsSync(path)) throw Error()
+//       res.sendFile(path)
+//     } catch (error) {
+//       const path = resolve(`${process.env.STATIC_DIR}/static-file-error.html`)
+//       res.sendFile(path)
+//     }
+//   }
 
 /**
  * @POST
@@ -45,22 +45,20 @@ exports.postLessons =
    **/
   async (req, res) => {
     try {
-      const { learnerEmail, learnerName, metadata, type } = req.body || {}
-      if (!learnerEmail || !learnerName)
-        return res.status(400).send({
-          error: { message: 'missing learnerEmail or learnerName' },
-        })
+      const { learnerEmail, learnerName, metadata } = req.body || {}
+
+      if (!learnerEmail || !learnerName){
+        throw Error('missing learnerEmail or learnerName')
+      }
 
       const meta = customerMetadata(metadata)
-
-      //NOTE  to satisfy stripe's metadata requirements
-      meta.first_lesson = meta.date
-
       const cus = await stripe.customers.search({
         query: `email:"${learnerEmail}"`,
       })
 
+      console.log('ha??', cus.data[0])
       if (cus.data?.length) {
+      
         const d = cus.data[0]
         return res.send({
           exist: true,
@@ -107,6 +105,7 @@ exports.postLessons =
       const secrets = {
         setupIntent: setupIntent?.client_secret,
       }
+
       return res.send({
         exist: false,
         secrets,

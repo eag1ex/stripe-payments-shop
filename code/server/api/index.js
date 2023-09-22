@@ -6,12 +6,12 @@ const { resolve } = require('path')
 const fs = require('fs')
 
 const { completeLessonPayment, scheduleLesson, refundLesson, lessonRefunded } = require('./ctrs/payments')
-const { getLessons, postLessons } = require('./ctrs/lessons')
-const { getCustomerPaymentMethod, accountUpdate,deleteCustomerAccount, findCustomersWithFailedPayments } = require('./ctrs/customer-account')
+const {  postLessons } = require('./ctrs/lessons')
+const { getCustomerPaymentMethod, accountUpdate,deleteCustomerAccount, findCustomersWithFailedPayments,updateCustomerMetadata } = require('./ctrs/customer-account')
 const { createProduct } = require('../libs/products')
 const {calculateLessonTotal} = require('./ctrs/reports')
 
-completeLessonPayment()
+
 /**
  * API router
  * @param {import('stripe').Stripe} stripe
@@ -38,7 +38,7 @@ exports.apiRouter = (stripe) => {
   //----------------------------------
 
   //-- lessons api
-  apiRouter.get('/lessons', getLessons(stripe))
+  // apiRouter.get('/lessons', getLessons(stripe))
   apiRouter.post('/lessons', postLessons(stripe))
   //----------------------------------
 
@@ -46,6 +46,7 @@ exports.apiRouter = (stripe) => {
   apiRouter.get('/payment-method/:customer_id', getCustomerPaymentMethod(stripe))
   apiRouter.post('/account-update/:customer_id', accountUpdate(stripe))
   apiRouter.post('/delete-account/:customer_id', deleteCustomerAccount(stripe))
+ 
   // ----------------------------------
 
   //-- reports api

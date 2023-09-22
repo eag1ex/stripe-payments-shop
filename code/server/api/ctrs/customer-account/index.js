@@ -10,8 +10,9 @@
 /** @typedef {import('express').Response} Response */
 
 const { EMAIL_REGEX } = require('../../../constants')
-const { cusFailedPaymentDto } = require('../../../utils')
+const { cusFailedPaymentDto, customerMetadata } = require('../../../utils')
 const moment = require('moment')
+
 
 /**
  * @POST
@@ -151,10 +152,27 @@ exports.accountUpdate =
    * @param {Response} res
    **/
   async (req, res) => {
-    const { email } = req.body
+    const { email, metadata } = req.body
     const { customer_id } = req.params
 
     try {
+
+      // if we are only updating metadata
+      // we can ignore other steps
+      // after user is created during registration process, and we decided to change the booking schedule, we need to update it again
+      if(metadata?.timestamp){
+        const cus = await stripe.customers.update(customer_id, { metadata })
+        return res.status(200).send({ 
+          message:'updated customer metadata',
+          customer:{
+            name: cus.name,
+            email: cus.email,
+            id: cus.id,
+            metadata: cus.metadata
+          }
+         })
+      }
+
       if (!!email && !EMAIL_REGEX.test(email)) throw Error(`INVALID_EMAIL`)
 
       // if we find match and email does not belong to customer_id

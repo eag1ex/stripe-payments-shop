@@ -61,13 +61,13 @@ exports.refundLesson =
         refundAmount = amount>0 && amount!==billable ? amount: billable
       }
 
-      // console.log('trying to refunds.create', {
-      //   amount,
-      //   amount_capturable: pi.amount_capturable,
-      //   pi_amount: pi.amount,
-      //   refundAmount,
-      //   billable
-      // })
+      console.log('trying to refunds.create', {
+        amount,
+        amount_capturable: pi.amount_capturable,
+        pi_amount: pi.amount,
+        refundAmount,
+        billable
+      })
 
       const refund = await stripe.refunds.create({
         amount: refundAmount,
@@ -76,15 +76,12 @@ exports.refundLesson =
         //  refund_application_fee: true,
       })
 
-      // console.log('trying to refunds.create', {
-      //   refund
-      // })
-     
+
       return res.status(200).send({
         ...(isDay === 'one_two_days_due'
           ? { message: '[one_two_days_before] Refund 50% of lesson, unless {amount>0} different then amount_received' }
           : isDay === 'day_of' || isDay==='pass_due'
-          ? { message: '[day_of] No refund, unless {amount>0} different then amount_received' }
+          ? { message: '[day_of][pass_due] No refund, unless {amount>0} different then amount_received' }
           : five_days_or_after
           ? { message: '[five_days_before] Max refund of lesson available' }
           : {}),

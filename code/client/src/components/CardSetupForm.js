@@ -62,6 +62,8 @@ const CardSetupForm = (props) => {
                   if (eventType === 'create') {
                     if (status === 'success') {
                       setBillingData(r)
+                      console.log('setBillingData', r,{session,selected}, )
+
                     }
 
                     if (status === 'pm-error') {

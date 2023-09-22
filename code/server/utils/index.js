@@ -9,8 +9,9 @@
 
 const moment = require('moment')
 
-exports.customerMetadata = ({ type, date, time, timestamp }) => {
+exports.customerMetadata = ({ type, date, time, timestamp,id }) => {
   return {
+    id: id+'_lesson',
     type,
     date,
     time,
@@ -61,6 +62,39 @@ exports.cusFailedPaymentDto = (pi, error) => {
     return err
   }
 }
+
+/**
+ * Payment intent TimeSlot messages
+ * - returns a message based on the time slot
+ * @param {TimeSlots} timeSlot
+ */
+exports.timeSlotMessage = (timeSlot, canceled = false) => {
+    let pre = canceled ? 'Payment intent re/created' : 'Payment intent created'
+    if (timeSlot === 'one_two_days_due') {
+      return `${pre}, [one_two_days_due] capture half of the payment as a late cancellation fee`
+    }
+    if (timeSlot === 'day_of') {
+      return `${pre}, [day_of] This lesson is past due, put a hold (i.e. authorize a pending payment)`
+    }
+
+    if (timeSlot === 'pass_due') {
+      return `${pre}, [pass_due] This lesson is past due, put a hold (i.e. authorize a pending payment)`
+    }
+
+    if (timeSlot === 'five_days_due') {
+      return `${pre}, [five_days_due] Put a hold (i.e. authorize a pending payment)`
+    }
+    if (timeSlot === 'five_days_or_after') {
+      return `${pre}, [five_days_or_after] Put a hold (i.e. authorize a pending payment)`
+    }
+
+    if (timeSlot === 'too_early') {
+      return `${pre}, [too_early], Put a hold (i.e. authorize a pending payment)`
+    } else {
+      return pre
+    }
+  }
+
 
 /**
  * MAJOR UPDATE the requirement in the brief does not comply with the unit tests we we need to disable validation and allow for any date for not so the unit test can pass

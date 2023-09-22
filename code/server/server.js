@@ -3,6 +3,7 @@ require('dotenv').config({ path: './.env' })
 
 /** @typedef {import('stripe').Stripe.errors} StripeErrors */
 /** @typedef {import('stripe').Stripe} Stripe */
+/** @typedef {import('stripe').Stripe.SetupIntent} SetupIntent */
 /** @typedef {import('stripe').Stripe.PaymentMethod} PaymentMethod */
 /** @typedef {import('stripe').Stripe.PaymentIntent} PaymentIntent */
 /** @typedef {import('stripe').Stripe.Customer} Customer*/
@@ -111,6 +112,25 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   if (data?.object?.object) console.log('[webhook][object]', data?.object?.object)
   if (data?.object?.id) console.log('[webhook][object][id]', data?.object?.id)
 
+
+  // if (eventType === 'setup_intent.succeeded') {
+  //   /** @type {SetupIntent} */
+  //   const si = data.object
+  //   // check if customer metadata is the same as setup intent metadata
+  //   // when setup intent is created there is a possibility to change the schedule before we submit card details
+
+  //   try {
+  //     //update pi metadata with customer metadata
+  //     /** @type {Customer} */
+  //     const cus = await stripe.customers.update(si.customer, { metadata: { ...si.metadata } })
+  //     console.log('[webhook][setup_intent][customer][updated]', cus.metadata)
+  //   } catch (err) {
+      
+  //   }
+  // }
+
+
+
   if (eventType === 'payment_intent.amount_capturable_updated') {}
   if(eventType === 'customer.subscription.created'){}
   if (eventType === 'customer.subscription.updated') {}
@@ -169,20 +189,16 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     const cus = data.object
   }
 
+  if (eventType === 'customer.created') {
+      /** @type {Customer} */
+      const cus = data.object
+      console.log('[webhook][customer][created][metadata]', JSON.stringify(cus.metadata, null, 1))
+  }
+  
   if (eventType === 'customer.updated') {
     /** @type {Customer} */
     const cus = data.object
-    // try{
-    //    update pi metadata with customer metadata
-    //    /** @type {Customer} */
-    //   const cus = await stripe.customers.retrieve(pi.customer)
-    //   const piUpdated = await stripe.paymentIntents.update(pi.id, {
-    //     metadata: {...cus.metadata},
-    //   })
-    //   console.log('[webhook][payment_intent][updated]', piUpdated.id)
-    // }catch(err){
-
-    // }
+    console.log('[webhook][customer][updated][metadata]', JSON.stringify(cus.metadata, null, 1))
   }
 
   if (eventType === 'payment_intent.created') {
