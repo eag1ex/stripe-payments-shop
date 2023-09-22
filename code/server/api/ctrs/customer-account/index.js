@@ -255,9 +255,9 @@ exports.findCustomersWithFailedPayments =
       const l= list.filter(n=>!!n.last_payment_error)
       
 
-     // if(l.length){
+     if(l.length){
         console.log('[findCustomersWithFailedPayments]', JSON.stringify(list,null,2))
-      //}
+      }
     
 
       // Only check the last 36 hours of payments
@@ -266,7 +266,7 @@ exports.findCustomersWithFailedPayments =
           ...until,
           expand: ['data.payment_method', 'data.customer'],
         })
-      ).data
+      ).data.filter((n) => n.metadata?.type === lessonType)
 
       // /**
       //  *
@@ -303,7 +303,7 @@ exports.findCustomersWithFailedPayments =
           
           try{
             // matching payment methods against paymentIntent
-            const list = (await stripe.paymentMethods.list({customer:r.customer.id,type:'card'})).data.filter(n=>n.id === r.payment_method.id)
+            const list = (await stripe.paymentMethods.list({customer:r.customer.id,type:'card'})).data.filter(n=>n.id === r.payment_method.id && n.metadata?.type === lessonType)
             if(list.length){
               // if there is a match then remove from results
               results.splice(inx, 1)
