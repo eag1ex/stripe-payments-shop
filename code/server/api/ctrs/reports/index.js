@@ -43,36 +43,27 @@ exports.calculateLessonTotal =
           gte: moment().subtract(36, 'hours').unix(),
         },
       }
+  
+      const lessonType = 'lessons-payment' 
+      // list all charges for lessons
+       const charges = (await stripe.charges.list({ ...until,  expand:['data.balance_transaction','data.payment_intent']})).data.filter(n=>n.status==='succeeded' && n.paid && n.metadata?.type === lessonType)
 
-      // list payment intent application fees for lessons 
-      const list = (await stripe.paymentIntents.list({ ...until, expand:['data.charges.data.balance_transaction']})).data
+       console.log('list/charges',JSON.stringify(charges.map(n=>({amount:n.amount, amount_refunded:n.amount_refunded, paid:n.paid, status:n.status, balance_transaction:n.balance_transaction, payment_intent:n.payment_intent})),null,2))
 
-      console.log('calculateLessonTotal/list/fees',list.map(n=>({application_fee_amount:n.application_fee_amount, amount_received:n.amount_received, amount:n.amount, status:n.status}) ))
-     
+      const amount_captured = charges.reduce((a, b) => a + b.amount_captured, 0)
+      const amount_refunded = charges.reduce((a, b) => a + b.amount_refunded, 0)
 
-
-      const paymentTotal = list.filter(n=>n.status==='succeeded' && n.metadata?.type === 'lessons-payment' )
-      const piIds= paymentTotal.map(n=>n.id)
-
-     const refundTotal = (await stripe.refunds.list({ ...until, expand:['data.payment_intent']})).data.filter(n=>n.status==='succeeded' && n.payment_intent?.metadata?.type === 'lessons-payment' && piIds.includes(n.payment_intent.id) && n.payment_intent.amount_received===n.amount)
-
-
-      const refund_total= refundTotal.reduce((a, b) => a + b.amount, 0)
-      const feeTotal = (paymentTotal.reduce((a, b) => a + b.application_fee_amount, 0)) + refund_total
-
-      const payment_total = paymentTotal.reduce((a, b) => a + b.amount, 0)
-  console.log('feeTotal ', payment_total,feeTotal)
       const totals = {
-        payment_total,
-        fee_total:feeTotal,
-        net_total:payment_total-feeTotal,
+        payment_total:amount_captured,
+        fee_total:amount_refunded,
+        net_total:amount_captured-amount_refunded,
       }
       return res.status(200).send({...totals})
 
     } catch (err) {
       /** @type {StripeAPIError} */
       const error = err
-      console.log('[calculateLessonTotal][error]', error)
+      console.log('[calculateLessonTotal][error]', error.message)
       return res.status(400).send({
         error: {
           message: error.message,

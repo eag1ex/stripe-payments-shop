@@ -1,4 +1,5 @@
 import React from "react";
+import { delCustomerSession } from "src/utils";
 
 const SignupComplete = ({ active, email, last4, customer_id }) => {
   if (active) {
@@ -18,7 +19,9 @@ const SignupComplete = ({ active, email, last4, customer_id }) => {
           Please check your email at <span id="customer_email">{email}</span>{" "}
           for a welcome letter.
         </p>
-        <button onClick={() => window.location.reload(false)}>
+        <button onClick={() => {
+          window.location.reload(false)
+        }}>
           Sign up again under a different email address
         </button>
       </div>

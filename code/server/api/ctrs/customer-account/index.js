@@ -10,8 +10,9 @@
 /** @typedef {import('express').Response} Response */
 
 const { EMAIL_REGEX } = require('../../../constants')
-const { cusFailedPaymentDto } = require('../../../utils')
+const { cusFailedPaymentDto, customerMetadata } = require('../../../utils')
 const moment = require('moment')
+
 
 /**
  * @POST
@@ -151,10 +152,27 @@ exports.accountUpdate =
    * @param {Response} res
    **/
   async (req, res) => {
-    const { email } = req.body
+    const { email, metadata } = req.body
     const { customer_id } = req.params
 
     try {
+
+      // if we are only updating metadata
+      // we can ignore other steps
+      // after user is created during registration process, and we decided to change the booking schedule, we need to update it again
+      if(metadata?.timestamp){
+        const cus = await stripe.customers.update(customer_id, { metadata })
+        return res.status(200).send({ 
+          message:'updated customer metadata',
+          customer:{
+            name: cus.name,
+            email: cus.email,
+            id: cus.id,
+            metadata: cus.metadata
+          }
+         })
+      }
+
       if (!!email && !EMAIL_REGEX.test(email)) throw Error(`INVALID_EMAIL`)
 
       // if we find match and email does not belong to customer_id
@@ -232,10 +250,10 @@ exports.findCustomersWithFailedPayments =
       }
 
       const list = (await stripe.paymentIntents.list({...until})).data
-      const errorList= list.filter(n=>!!n.last_payment_error)
+      const l= list.filter(n=>!!n.last_payment_error)
       
-      if(errorList.length){
-        console.log('[findCustomersWithFailedPayments][errorList]', JSON.stringify(errorList,null,2))
+      if(l.length){
+        console.log('[findCustomersWithFailedPayments]', JSON.stringify(l,null,2))
       }
     
 
@@ -247,22 +265,21 @@ exports.findCustomersWithFailedPayments =
         })
       ).data
 
-      /**
-       *
-       * @param {LastPaymentError} last_payment_error
-       */
-      const issuerDeclined = (last_payment_error) => {
-        const errMsg = 'issuer_declined'
-        const customError =
-          (last_payment_error?.type.includes(errMsg) ||
-            last_payment_error?.code?.includes(errMsg) ||
-            last_payment_error?.decline_code?.includes(errMsg) ||
-            last_payment_error?.message.includes(errMsg)) &&
-          'issuer_declined'
-        return customError ? 'issuer_declined' : undefined
-      }
+      // /**
+      //  *
+      //  * @param {LastPaymentError} last_payment_error
+      //  */
+      // const issuerDeclined = (last_payment_error) => {
+      //   const errMsg = 'issuer_declined'
+      //   const customError =
+      //     (last_payment_error?.type.includes(errMsg) ||
+      //       last_payment_error?.code?.includes(errMsg) ||
+      //       last_payment_error?.decline_code?.includes(errMsg) ||
+      //       last_payment_error?.message.includes(errMsg)) &&
+      //     'issuer_declined'
+      //   return customError ? 'issuer_declined' : undefined
+      // }
 
-    
       
       /**
        * from dto() response object
@@ -270,12 +287,7 @@ exports.findCustomersWithFailedPayments =
       const results = []
 
       for (const pi of paymentIntents) {
-        if (!!pi.last_payment_error) {
-          const result = issuerDeclined(pi.last_payment_error)
-          if (result) {
-            results.push(cusFailedPaymentDto(pi, pi.last_payment_error))
-          }
-        }
+        if (pi.last_payment_error)  results.push(cusFailedPaymentDto(pi, 'issuer_declined'))
       }
 
 

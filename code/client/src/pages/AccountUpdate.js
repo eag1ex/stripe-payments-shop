@@ -53,7 +53,7 @@ const AccountUpdate = () => {
     customerDataCopy.customer.name = resp.billing_details.name
     customerDataCopy.card = resp.card
     setCustomerData(JSON.parse(JSON.stringify(customerDataCopy)))
-    setCustomerSession({ name: resp.billing_details.name, email: resp.billing_details.email, customerId })
+    setCustomerSession({ name: resp.billing_details.name, email: resp.billing_details.email, customerId})
   }
 
   return (

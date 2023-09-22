@@ -34,6 +34,16 @@ export const delay = (time = 0) => {
   })
 }
 
+export const metaData = ({ type, date, time,timestamp,id }) => {
+  return {
+    id,
+    type,
+    date,
+    time,
+    timestamp
+  }
+}
+
 export const errorHandler = async (errResponse) => {
   try {
     const r = (await errResponse.json()) || {}
@@ -68,6 +78,7 @@ export const checkoutResp = (d) => {
  */
 export const customerFromSession = () => {
   const customer = {
+    timestamp: Number(sessionStorage.getItem('timestamp')),
     email: sessionStorage.getItem('customerEmail'),
     name: sessionStorage.getItem('customerName'),
     customerId: sessionStorage.getItem('customerId'),
@@ -75,7 +86,37 @@ export const customerFromSession = () => {
   return customer
 }
 
+/**
+ * Set customer session
+ */
+export const setCustomerSession = ({ name, email, customerId,timestamp }) => {
+  if (name) sessionStorage.setItem('customerEmail', email)
+  if (email) sessionStorage.setItem('customerName', name)
+  if (customerId) sessionStorage.setItem('customerId', customerId)
+  if (timestamp) sessionStorage.setItem('timestamp', timestamp)
+
+}
+
+export const delCustomerSession = () => {
+  sessionStorage.removeItem('customerEmail')
+  sessionStorage.removeItem('customerName')
+  sessionStorage.removeItem('customerId')
+  sessionStorage.removeItem('timestamp')
+
+}
+
+
+
 //format session's date
+//  * @param {'zero'|'one'| 'two'|'three'|'four' |'five' |'six'} id 
+/**
+ * 
+ * @param {*} index 
+ * @param {'first'|'second'| 'third'} id 
+ * @param {Date} session 
+ * @param {*} time 
+ * @returns 
+ */
 export const formatSession = (index, id, session, time) => {
 
   const months = [
@@ -102,36 +143,43 @@ export const formatSession = (index, id, session, time) => {
   let title = `${date} ${time}`;
   let type = `${id}_lesson`;
 
+
   // now we need to set the correct time for timestamp!  haha
   let timestamp = session.getTime()
-  const outputDateFormat = 'DD-MM-YYYY';
-  if(time==='3:00 p.m.') {
 
+  
+  // if(id==='zero') {
+  //   timestamp = moment(session.getTime()).set({hour:9,minute:0,second:0,millisecond:0}).valueOf()
+  //   id='first'
+  // }
+
+  // if(id==='one') {
+  //   timestamp = moment(session.getTime()).set({hour:13,minute:0,second:0,millisecond:0}).valueOf()
+  //   id='second'
+  // }
+
+  // if(id==='two') {
+  //   timestamp=  moment(session.getTime()).set({hour:16,minute:0,second:0,millisecond:0}).valueOf()
+  //   id='third'
+  // }
+
+  // if(id==='three') {
+  //   timestamp = moment(session.getTime()).set({hour:15,minute:0,second:0,millisecond:0}).valueOf()
+  //   id='fourth'
+  // }
+
+  if(id==='first') {
     timestamp = moment(session.getTime()).set({hour:15,minute:0,second:0,millisecond:0}).valueOf()
   }
-  if(time==='4:00 p.m.') {
-    timestamp=  moment(session.getTime()).set({hour:16,minute:0,second:0,millisecond:0}).valueOf()
+
+  if(id==='second') {
+    timestamp = moment(session.getTime()).set({hour:16,minute:0,second:0,millisecond:0}).valueOf()
   }
-  if(time==='5:00 p.m.') {
+
+  if(id==='third') {
     timestamp = moment(session.getTime()).set({hour:17,minute:0,second:0,millisecond:0}).valueOf()
   }
 
   return { index, id, title, date, time, selected: "", type, timestamp };
 };
 
-
-
-/**
- * Set customer session
- */
-export const setCustomerSession = ({ name, email, customerId }) => {
-  if (name) sessionStorage.setItem('customerEmail', email)
-  if (email) sessionStorage.setItem('customerName', name)
-  if (customerId) sessionStorage.setItem('customerId', customerId)
-}
-
-export const delCustomerSession = () => {
-  sessionStorage.removeItem('customerEmail')
-  sessionStorage.removeItem('customerName')
-  sessionStorage.removeItem('customerId')
-}

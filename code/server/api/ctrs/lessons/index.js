@@ -8,28 +8,28 @@ const { resolve } = require('path')
 const fs = require('fs')
 const { customerMetadata } = require('../../../utils')
 
-/**
- * @GET
- * @api /lessons/
- * @param {Stripe} stripe
- * @returns
- */
-exports.getLessons =
-  (stripe) =>
-  /**
-   * @param {Request} req
-   * @param {Response} res
-   **/
-  async (req, res) => {
-    try {
-      const path = resolve(`${process.env.STATIC_DIR}/lessons.html`)
-      if (!fs.existsSync(path)) throw Error()
-      res.sendFile(path)
-    } catch (error) {
-      const path = resolve(`${process.env.STATIC_DIR}/static-file-error.html`)
-      res.sendFile(path)
-    }
-  }
+// /**
+//  * @GET
+//  * @api /lessons/
+//  * @param {Stripe} stripe
+//  * @returns
+//  */
+// exports.getLessons =
+//   (stripe) =>
+//   /**
+//    * @param {Request} req
+//    * @param {Response} res
+//    **/
+//   async (req, res) => {
+//     try {
+//       const path = resolve(`${process.env.STATIC_DIR}/lessons.html`)
+//       if (!fs.existsSync(path)) throw Error()
+//       res.sendFile(path)
+//     } catch (error) {
+//       const path = resolve(`${process.env.STATIC_DIR}/static-file-error.html`)
+//       res.sendFile(path)
+//     }
+//   }
 
 /**
  * @POST
@@ -45,18 +45,21 @@ exports.postLessons =
    **/
   async (req, res) => {
     try {
-      const { learnerEmail, learnerName, metadata, type } = req.body || {}
-      if (!learnerEmail || !learnerName)
-        return res.status(400).send({
-          error: { message: 'missing learnerEmail or learnerName' },
-        })
+      const { learnerEmail, learnerName, metadata } = req.body || {}
+
+      if (!learnerEmail || !learnerName){
+        throw Error('missing learnerEmail or learnerName')
+      }
 
       const meta = customerMetadata(metadata)
       const cus = await stripe.customers.search({
         query: `email:"${learnerEmail}"`,
       })
 
+
+
       if (cus.data?.length) {
+      
         const d = cus.data[0]
         return res.send({
           exist: true,
@@ -75,16 +78,27 @@ exports.postLessons =
       if (r.metadata) {
         // @ts-ignore
         r.metadata.index = (() => {
+          
           let index = 0 
+          // these lessons reflect the order of the lessons in the UI
+          // if (r.metadata.type === 'zero_lesson') index = 0
+          // if (r.metadata.type === 'one_lesson') index = 1
+          // if (r.metadata.type === 'two_lesson') index = 2
+          // if (r.metadata.type === 'three_lesson') index = 3
+          // if (r.metadata.type === 'four_lesson') index = 4
+          // if (r.metadata.type === 'five_lesson') index = 5
+          // if (r.metadata.type === 'six_lesson') index = 6
+
           if (r.metadata.type === 'first_lesson') index = 0
           if (r.metadata.type === 'second_lesson') index = 1
           if (r.metadata.type === 'third_lesson') index = 2
-          // we dont support the type: lessons-payment
+   
           return index
         })()
       }
 
       const setupIntent = await stripe.setupIntents.create({
+      
         customer: r.id,
         metadata: r.metadata,
       })
@@ -93,6 +107,7 @@ exports.postLessons =
       const secrets = {
         setupIntent: setupIntent?.client_secret,
       }
+
       return res.send({
         exist: false,
         secrets,
@@ -102,7 +117,7 @@ exports.postLessons =
         email: r.email,
       })
     } catch (error) {
-      console.log('[lessons][error]', error)
+      console.log('[lessons][error]', error.message)
 
       res.status(400).send({
         error: {

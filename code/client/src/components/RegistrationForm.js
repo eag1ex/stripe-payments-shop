@@ -2,9 +2,9 @@ import { Elements, AddressElement } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import React, { useEffect, useRef, useState } from 'react'
 import CardSetupForm from './CardSetupForm'
-import { createCustomer } from '../Services/customer'
+import { createCustomer } from '../Services/account'
 import { serverConfig } from '../Services/config'
-import { setCustomerSession, customerFromSession, delCustomerSession } from '../utils/index'
+import { setCustomerSession, customerFromSession, delCustomerSession,metaData } from '../utils/index'
 
 // history.push({}, document.title, window.location.pathname)
 // it would be best to use environment variables, but i dont see that in code.client root, i do understand you want to call it from GET /config, so in order not to rerender the object we declare it before render, as advised in your docs, @source: https://stripe.com/docs/payments/save-and-reuse?platform=web&ui=elements
@@ -40,6 +40,8 @@ const RegistrationForm = (props) => {
     if (field === 'learnerEmail') setLearnerEmail(value)
     if (field === 'learnerName') setLearnerName(value)
   }
+
+  // console.log('[RegistrationForm][session][selected]', session)
 
   const handleClickForPaymentElement = async () => {
     if (
@@ -78,6 +80,7 @@ const RegistrationForm = (props) => {
           name: n.name,
           email: n.email,
           customerId: n.customerId,
+          timestamp: n.metadata.timestamp,
         })
 
         setProcessing(false)
@@ -104,7 +107,21 @@ const RegistrationForm = (props) => {
       })
   }
 
+
+// check if session was updated during registration
+  useEffect(() => {
+   
+    if(!session?.timestamp || !customer?.metadata?.timestamp) return
+    if (session?.timestamp !== customer?.metadata?.timestamp) {
+      const cus = {...customer}
+      cus.metadata = metaData(session)
+      setCustomer(cus)
+    }
+  },[session,customer])
+
   let body = null
+
+
 
   if (selected === -1) {
     return <>{body}</>

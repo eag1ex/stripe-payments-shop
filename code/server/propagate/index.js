@@ -6,6 +6,7 @@ require("dotenv").config({ path: "../.env" });
 const moment = require("moment");
 const { apiVersion, clientDir } = require("../config");
 const { delay } = require("../utils");
+const {updateCustomerMeta} = require('../libs/customer')
 
 /** @type {Stripe} */
 const Stripe = require("stripe")(process.env.STRIPE_SECRET_KEY, { apiVersion });
@@ -360,6 +361,46 @@ async function deletePaymentMethods(){
 }
 
 
+// update customer metadata
+async function updateCustomerMetadata(){
+  try{
+
+    // cus_OfeQKWE2x8FtUL
+    const cus = await Stripe.customers.update('cus_OfeQKWE2x8FtUL',{
+      metadata:{
+        date: "11 Oct",
+        first_lesson: "11 Oct",
+        time: "5:00 p.m.",
+        timestamp: moment().subtract(5,'days').valueOf(),
+        type: "third_lesson"
+      }
+    })
+
+    console.log('customer updated',cus.metadata)
+
+  }catch(err){
+    console.error(err)
+  }
+} 
+
+
+async function customerMetadata() {
+   
+  const dateFrom = (num)=>moment().add(num,'days')
+ const days = -2
+ const cus = await updateCustomerMeta(Stripe, 'cus_OgM57PVG38Oocu', {
+    date: dateFrom(days).format("MMM DD"),
+    first_lesson: dateFrom(days).format("MMM DD"),
+    time:dateFrom(days).format('LT'),
+    timestamp:dateFrom(days).valueOf(),
+    type: "lessons-payment"
+  })
+  console.log('cus/updated',cus.id, cus.metadata)
+}; 
+
+customerMetadata()
+
+
 
 // listCustomersDelete();
 // cancelSubSchedules()
@@ -370,5 +411,8 @@ async function deletePaymentMethods(){
 
 
 
-// const trial_end_test = moment().add(30,'seconds').unix()
-// console.log(trial_end_test,moment.unix(trial_end_test).toString())
+// const fiveDaysOrAfter = moment(1695725777123).startOf('day').isBefore(moment().startOf('day').add(5, 'days').subtract(1,'seconds'))
+// const fiveDaysOrBefore = moment(1695725777123).isBefore(moment().endOf('day').add(5, 'days').add(1,'seconds'))
+
+//  console.log('fiveDaysOrAfter',fiveDaysOrBefore)
+

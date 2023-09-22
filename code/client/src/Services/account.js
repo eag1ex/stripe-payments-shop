@@ -1,9 +1,11 @@
 /**
  * @typedef {import('../types').CustomerType.Update} CustomerUpdate
  * @typedef {import('../types').CustomerType.PaymentMethod} CustomerPaymentMethod
+ * @typedef {import('../types').CustomerType.LessonSession} LessonSession
  */
 
-import { errorHandler } from '../utils'
+import { errorHandler ,metaData} from '../utils'
+
 
 /**
  * @GET
@@ -33,18 +35,28 @@ export const getCustomer = async (id) => {
  * @api {{baseUrl}}/v1/account-update/:customer_id
  * Update customer email | name, and return new setupIntent secret including {customer, payment} object's
  * @param {string} customerId
- * @param {{name?:string,email?:string}} body
+ * @param {{name?:string,email?:string, metadata?:LessonSession}} body
  * @returns {Promise<CustomerUpdate>}
  */
 export const customerAccountUpdate = async (customerId, body) => {
+  
+
+  // updating metadata is optional
+
+  if (body?.metadata?.timestamp) {
+    body.metadata = metaData(body.metadata)
+  }
+
   const response = await fetch(`/api/account-update/${customerId}`, {
     method: 'post',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-    body: !!body && JSON.stringify({ name: body?.name, email: body?.email }),
+    body: !!body && JSON.stringify({ name: body?.name, email: body?.email, ...(body?.metadata ?{metadata:body?.metadata}:{} )  }),
   })
+
+
   if (!response.ok) {
     console.error('[customerAccountUpdate]: Error happened while fetching data')
     // console.error(response)
@@ -53,3 +65,25 @@ export const customerAccountUpdate = async (customerId, body) => {
   const data = await response.json()
   return data
 }
+
+
+export const createCustomer = async ({ learnerEmail, learnerName, metadata }) => {
+
+  // customer metadata is LessonSession
+  const response = await fetch('/api/lessons', {
+    method: 'post',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ learnerEmail, learnerName, metadata: metaData(metadata) }),
+  })
+  if (!response.ok) {
+    console.error('[createCustomer]: Error happened while fetching data')
+    return await errorHandler(response)
+  }
+  const data = await response.json()
+
+  return data
+}
+

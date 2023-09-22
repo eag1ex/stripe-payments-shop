@@ -51,7 +51,7 @@ const UpdateCustomer = ({ customer, customerName, customerEmail, customerUpdateC
     customerAccountUpdate(customer.id, { email, name })
       .then((result) => {
         setSetupIntentSecret(result.secret.setupIntent)
-        setCustomerSession({ name: result.customer.name, email: result.customer.email, customerId: result.customer.id })
+        setCustomerSession({ name: result.customer.name, email: result.customer.email, customerId: result.customer.id,timestamp:result.customer.metadata.timestamp  })
         setStatus('success')
       })
       .catch((e) => {
