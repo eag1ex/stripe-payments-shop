@@ -49,14 +49,19 @@ exports.calculateLessonTotal =
        const charges = (await stripe.charges.list({ ...until,  expand:['data.balance_transaction','data.payment_intent']})).data.filter(n=>n.status==='succeeded' && n.paid && n.metadata?.type === lessonType)
 
        console.log('list/charges',JSON.stringify(charges.map(n=>({amount:n.amount, amount_refunded:n.amount_refunded, amount_captured:n.amount_captured, status:n.status, balance_transaction:n.balance_transaction, payment_intent:n.payment_intent,application_fee:n.application_fee })),null,2))
+      const balance_transactions = charges.filter(n=>!!n?.balance_transaction && n?.balance_transaction?.currency==='usd').map(n=>n.balance_transaction)
 
+     // const amount = charges.reduce((a, b) => a + b.amount, 0)
       const amount_captured = charges.reduce((a, b) => a + b.amount_captured, 0)
       const amount_refunded = charges.reduce((a, b) => a + b.amount_refunded, 0)
+      const balance_transactionFees = balance_transactions.reduce((a, b) => a + b.fee, 0)
 
+      // on our account we cannot calculate stripe fees against the same currency, our demo account is in THB unit test account is on USD
+      console.log('balance_transactionFees',balance_transactionFees)
       const totals = {
         payment_total:amount_captured,
-        fee_total:amount_refunded,
-        net_total:amount_captured-amount_refunded,
+        fee_total:amount_refunded+balance_transactionFees,
+        net_total:amount_captured-amount_refunded-balance_transactionFees,
       }
       return res.status(200).send({...totals})
 
