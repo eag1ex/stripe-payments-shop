@@ -248,13 +248,16 @@ exports.findCustomersWithFailedPayments =
           gte: moment().subtract(36, 'hours').unix(),
         },
       }
-
-      const list = (await stripe.paymentIntents.list({...until})).data
+      const lessonType = 'lessons-payment' 
+      const list = (await stripe.paymentIntents.list({...until})).data.filter(n=>n.metadata?.type === lessonType)
+      
+  
       const l= list.filter(n=>!!n.last_payment_error)
       
-      if(l.length){
+
+     // if(l.length){
         console.log('[findCustomersWithFailedPayments]', JSON.stringify(l,null,2))
-      }
+      //}
     
 
       // Only check the last 36 hours of payments
