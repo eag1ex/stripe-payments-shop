@@ -11,7 +11,7 @@ const moment = require('moment')
 
 exports.customerMetadata = ({ type, date, time, timestamp,id }) => {
   return {
-    id: id+'_lesson',
+    [id+'_lesson']: date,
     type,
     date,
     time,

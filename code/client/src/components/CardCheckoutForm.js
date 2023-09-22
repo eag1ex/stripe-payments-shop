@@ -10,9 +10,6 @@ const CardCheckoutForm = (props) => {
   const stripe = useStripe()
   const elements = useElements()
 
-  console.log('[CardCheckoutForm]1','',customerFromSession()?.timestamp)
-  console.log('[CardCheckoutForm]2','',customer.metadata?.timestamp)
-
 
   const handleClick = async (e) => {
     e.preventDefault()

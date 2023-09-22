@@ -42,12 +42,11 @@ export const customerAccountUpdate = async (customerId, body) => {
   
 
   // updating metadata is optional
-  console.log('customerAccountUpdate 1',body)
-  if (body?.metadata) {
+
+  if (body?.metadata?.timestamp) {
     body.metadata = metaData(body.metadata)
   }
 
-  console.log('customerAccountUpdate 2',body)
   const response = await fetch(`/api/account-update/${customerId}`, {
     method: 'post',
     headers: {

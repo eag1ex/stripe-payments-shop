@@ -20,7 +20,6 @@ const SignupComplete = ({ active, email, last4, customer_id }) => {
           for a welcome letter.
         </p>
         <button onClick={() => {
-          delCustomerSession();
           window.location.reload(false)
         }}>
           Sign up again under a different email address

@@ -166,12 +166,21 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       const email = EMAIL_REGEX.test(pm.billing_details?.email) && pm.billing_details?.email
       const name = pm.billing_details?.name
       if (!!email || !!name) {
-      await stripe.customers.update(pm.customer, {
+
+      const cus = await stripe.customers.update(pm.customer, {
           ...(name && { name }),
           ...(email && { email }),
         })
-      console.log('[webhook][customers][updated]', pm.customer)
+        console.log('[webhook][customers][updated]')
+        // ATTENTION we make sure payment metadata is set!!
+        const pmUpdated = await stripe.paymentMethods.update(pm.id, {
+          metadata:cus.metadata
+        })
+        console.log('[webhook][payment_method.attached][metadata][updated]',pmUpdated.metadata)
       }
+
+      // add metadata to payment method
+    
 
     } catch (err) {
       console.log(pm.customer, err.message)
@@ -194,7 +203,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       const cus = data.object
       console.log('[webhook][customer][created][metadata]', JSON.stringify(cus.metadata, null, 1))
   }
-  
+
   if (eventType === 'customer.updated') {
     /** @type {Customer} */
     const cus = data.object

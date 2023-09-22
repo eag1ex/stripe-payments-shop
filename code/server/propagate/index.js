@@ -382,7 +382,6 @@ async function updateCustomerMetadata(){
     console.error(err)
   }
 } 
-//updateCustomerMetadata()
 
 
 async function customerMetadata() {

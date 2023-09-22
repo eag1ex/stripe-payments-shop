@@ -56,7 +56,8 @@ exports.postLessons =
         query: `email:"${learnerEmail}"`,
       })
 
-      console.log('ha??', cus.data[0])
+
+
       if (cus.data?.length) {
       
         const d = cus.data[0]
@@ -115,7 +116,7 @@ exports.postLessons =
         email: r.email,
       })
     } catch (error) {
-      console.log('[lessons][error]', error)
+      console.log('[lessons][error]', error.message)
 
       res.status(400).send({
         error: {
