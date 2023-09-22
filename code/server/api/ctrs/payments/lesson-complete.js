@@ -67,6 +67,10 @@ exports.completeLessonPayment =
       })
 
       pi = await stripe.paymentIntents.capture(pi.id, {
+        metadata:{
+          ...metadata,
+          booking_schedule: isDay,
+        },
         amount_to_capture: amount_to_capture,
       })
    

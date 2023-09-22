@@ -72,10 +72,12 @@ exports.refundLesson =
       const refund = await stripe.refunds.create({
         amount: refundAmount,
         payment_intent: payment_intent_id,
-        metadata
+        metadata:{
+          booking_schedule:isDay,
+          ...metadata
+        }
         //  refund_application_fee: true,
       })
-
 
       return res.status(200).send({
         ...(isDay === 'one_two_days_due'

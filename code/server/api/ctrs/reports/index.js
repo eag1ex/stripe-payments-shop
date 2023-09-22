@@ -43,34 +43,20 @@ exports.calculateLessonTotal =
           gte: moment().subtract(36, 'hours').unix(),
         },
       }
-      // for testing check report only for existing customers
-      //const cusIds = (await stripe.customers.list({ limit: 10000 })).data.map(n=>n.id)
-
-      // console.log('list/customers',cusIds)
-
-
+  
       const lessonType = 'lessons-payment' 
-
       // list all charges for lessons
-       const charges = (await stripe.charges.list({ ...until,  expand:['data.balance_transaction','data.payment_intent']})).data.filter(n=>n.status==='succeeded' && n.metadata?.type === lessonType /*&& cusIds.includes(n.customer)*/)
+       const charges = (await stripe.charges.list({ ...until,  expand:['data.balance_transaction','data.payment_intent']})).data.filter(n=>n.status==='succeeded' && n.paid && n.metadata?.type === lessonType)
 
        console.log('list/charges',JSON.stringify(charges.map(n=>({amount:n.amount, amount_refunded:n.amount_refunded, paid:n.paid, status:n.status, balance_transaction:n.balance_transaction, payment_intent:n.payment_intent})),null,2))
 
-       const paymentTotal = charges.filter(n=>n.paid && n.amount>=0 && n.amount_refunded===0)
-
-       // NOTE balance_transaction.fee currency reflects what card was used, so calculations will be off on local if i selected different country
-       const feeTotal = paymentTotal.filter(n=>n.balance_transaction)
-       
-
-   
-     // const refund_total= refundTotal.reduce((a, b) => a + b.amount_refunded, 0)
-      const fee_total = feeTotal.reduce((a, b) => a + b.balance_transaction.fee, 0)
-      const payment_total = paymentTotal.reduce((a, b) => a + b.amount, 0)
+      const amount_captured = charges.reduce((a, b) => a + b.amount_captured, 0)
+      const amount_refunded = charges.reduce((a, b) => a + b.amount_refunded, 0)
 
       const totals = {
-        payment_total:payment_total,
-        fee_total:fee_total,
-        net_total:payment_total-fee_total,
+        payment_total:amount_captured,
+        fee_total:amount_refunded,
+        net_total:amount_captured-amount_refunded,
       }
       return res.status(200).send({...totals})
 

@@ -101,7 +101,9 @@ exports.scheduleLesson =
         amount,
         description: description.toString(),
         payment_method: paymentMethod.id,
-        metadata: { ...customer.metadata, type: 'lessons-payment' },
+        metadata: { 
+          booking_schedule: isDay,
+          ...customer.metadata, type: 'lessons-payment' },
         customer: customer.id,
         receipt_email: customer.email,
         // payment_method_options: {
