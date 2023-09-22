@@ -249,7 +249,7 @@ exports.findCustomersWithFailedPayments =
         },
       }
       const lessonType = 'lessons-payment' 
-      const list = (await stripe.paymentIntents.list({...until})).data.filter(n=>n.metadata?.type === lessonType)
+      const list = (await stripe.paymentIntents.list({...until})).data//.filter(n=>n.metadata?.type === lessonType)
       
   
       const l= list.filter(n=>!!n.last_payment_error)
@@ -268,6 +268,7 @@ exports.findCustomersWithFailedPayments =
         })
       ).data
 
+      //
       // /**
       //  *
       //  * @param {LastPaymentError} last_payment_error
