@@ -267,10 +267,9 @@ exports.findCustomersWithFailedPayments =
 
       // catch all payments intents with errors
       for (const pi of paymentIntents) {
-        // if (pi.last_payment_error) {
-         
-        // }
-        results.push(pi)
+        if (pi.last_payment_error) {
+          results.push(pi)
+        }
       }
 
       // now check customer payment method associated with failed payment intent for last 36 hours
