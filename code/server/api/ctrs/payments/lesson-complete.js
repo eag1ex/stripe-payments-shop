@@ -59,14 +59,15 @@ exports.completeLessonPayment =
         amount_to_capture = amount > 0 && amount !== validAmount ? amount : validAmount
       }
 
-      console.log('trying amount_to_capture', {
-        amount,
-        amount_capturable: pi.amount_capturable,
-        pi_amount: pi.amount,
-        amount_to_capture
-      })
+      // console.log('trying amount_to_capture', {
+      //   amount,
+      //   amount_capturable: pi.amount_capturable,
+      //   pi_amount: pi.amount,
+      //   amount_to_capture
+      // })
 
       pi = await stripe.paymentIntents.capture(pi.id, {
+        
         metadata:{
           ...metadata,
           booking_schedule: isDay,
