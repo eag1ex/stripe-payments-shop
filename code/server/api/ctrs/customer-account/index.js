@@ -291,7 +291,7 @@ exports.findCustomersWithFailedPayments =
         }
       }
 
-      console.log('match/paymentIntents/results/1',JSON.stringify(results, null, 2))
+      console.log('match/paymentIntents/results/1',JSON.stringify(paymentIntentsWithErrors, null, 2))
 
       // restructure
       const r = paymentIntentsWithErrors.map((n) => cusFailedPaymentDto(n, 'issuer_declined'))
