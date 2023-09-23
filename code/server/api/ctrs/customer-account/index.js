@@ -273,12 +273,14 @@ exports.findCustomersWithFailedPayments =
           if(customer?.deleted) continue
 
           const last_payment_error = r.last_payment_error
-          
+  
           try {
             // matching payment methods against paymentIntent
             const list = (
               await stripe.paymentMethods.list({ customer: customer.id, type: 'card' })
             ).data.filter((n) => n.id === last_payment_error?.payment_method?.id)
+
+           
             // don't include customers who previously failed but have now updated their payment method.
             // the previous failed payment intent was not associated with the latest payment method
             if (!list.length) paymentIntentsWithErrors.splice(inx, 1)
