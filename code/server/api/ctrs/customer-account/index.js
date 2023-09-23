@@ -247,61 +247,18 @@ exports.findCustomersWithFailedPayments =
         },
       }
       const lessonType = 'lessons-payment'
-
-
-      // const listLessonTypes = ['first_lesson','second_lesson','third_lesson','fourth_lesson','fifth_lesson','sixth_lesson','seventh_lesson','eighth_lesson','ninth_lesson','tenth_lesson']
-
-      // // list setup intents to get all customer payment methods as it is not possible to list payment methods directly
-      // const failedSetupIntents = (await stripe.setupIntents.list({  expand: ['data.customer'] })).data.filter(n=> !!n.last_setup_error && !n.customer?.deleted)
-
-      
-      // payment intent  check for last_payment_error 
-
-      //console.log('match/failedSetupIntents',JSON.stringify(failedSetupIntents, null, 2))
+      const listLessonTypes = ['first_lesson','second_lesson','third_lesson','fourth_lesson','fifth_lesson','sixth_lesson','seventh_lesson','eighth_lesson','ninth_lesson','tenth_lesson',lessonType]
 
       // Only check the last 36 hours of payments
       let paymentIntents = (
         await stripe.paymentIntents.list({
-          //...until,
+          ...until,
           expand: ['data.payment_method', 'data.customer'],
         })
-      ).data
+      ).data.filter((n) => listLessonTypes.includes(n.metadata?.type))
 
-      //   // match payment intents with setup intents by payment_method id
-      //   const listMatch = []
-      //   for (const si of failedSetupIntents) {
-      //     const list = paymentIntents.filter((n) => /*n.payment_method?.id === si.payment_method*/ n.customer?.id === si.customer?.id)
-      //     listMatch.push(...list)
-      //     // if (list.length) {
-      //     //   paymentIntents = paymentIntents.filter((n) => n.payment_method === si.payment_method)
-      //     // }
-      //   }
-
+ 
       console.log('match/paymentIntents',JSON.stringify(paymentIntents, null, 2))
-      // console.log('[findCustomersWithFailedPayments][charges]', JSON.stringify(paymentIntents, null, 2))
-
-      paymentIntents = paymentIntents.filter((n) => n.metadata?.type === lessonType)
-
-      // const l = paymentIntents.filter((n) => !!n.last_payment_error)
-
-      // if (l.length) {
-      //   console.log('[findCustomersWithFailedPayments]', JSON.stringify(l, null, 2))
-      // }
-
-      // /**
-      //  *
-      //  * @param {LastPaymentError} last_payment_error
-      //  */
-      // const issuerDeclined = (last_payment_error) => {
-      //   const errMsg = 'issuer_declined'
-      //   const customError =
-      //     (last_payment_error?.type.includes(errMsg) ||
-      //       last_payment_error?.code?.includes(errMsg) ||
-      //       last_payment_error?.decline_code?.includes(errMsg) ||
-      //       last_payment_error?.message.includes(errMsg)) &&
-      //     'issuer_declined'
-      //   return customError ? 'issuer_declined' : undefined
-      // }
 
       /**
        * @type {Array<PaymentIntent>}
@@ -312,12 +269,10 @@ exports.findCustomersWithFailedPayments =
       for (const pi of paymentIntents) {
         if (pi.last_payment_error) {
           results.push(pi)
-          // results.push(cusFailedPaymentDto(pi, 'issuer_declined'))
         }
       }
 
       // now check customer payment method associated with failed payment intent for last 36 hours
-      // if
       if (results.length) {
         // for loop
         for (let inx = 0; inx < results.length; inx++) {
@@ -334,7 +289,7 @@ exports.findCustomersWithFailedPayments =
           try {
             // matching payment methods against paymentIntent
             const list = (
-              await stripe.paymentMethods.list({ ...until, customer: customer.id, type: 'card' })
+              await stripe.paymentMethods.list({ customer: customer.id, type: 'card' })
             ).data.filter((n) => n.id === paymentMethod.id && n.metadata?.type === lessonType)
 
             // don't include customers who previously failed but have now updated their payment method.
@@ -351,7 +306,7 @@ exports.findCustomersWithFailedPayments =
         }
       }
 
-      // restructure results using cusFailedPaymentDto
+      // restructure
       const r = results.map((n) => cusFailedPaymentDto(n, 'issuer_declined'))
 
       // finally remove ids from results
