@@ -287,12 +287,11 @@ exports.findCustomersWithFailedPayments =
            */
           const paymentMethod = r.payment_method
           
-
           try {
             // matching payment methods against paymentIntent
             const list = !!paymentMethod?.id ?(
               await stripe.paymentMethods.list({ customer: customer.id, type: 'card' })
-            ).data.filter((n) => n.id === paymentMethod?.id && n.metadata?.type === lessonType) :[]
+            ).data.filter((n) => n.id === paymentMethod?.id) :[]
 
             // don't include customers who previously failed but have now updated their payment method.
             // the previous failed payment intent was not associated with the latest payment method
