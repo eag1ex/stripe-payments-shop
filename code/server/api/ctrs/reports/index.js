@@ -48,7 +48,6 @@ exports.calculateLessonTotal =
       // list all charges for lessons
        const charges = (await stripe.charges.list({ ...until,  expand:['data.balance_transaction','data.payment_intent']})).data.filter(n=>n.status==='succeeded' && n.paid && n.metadata?.type === lessonType)
 
-      //  console.log('list/charges',JSON.stringify(charges.map(n=>({amount:n.amount, amount_refunded:n.amount_refunded, amount_captured:n.amount_captured, status:n.status, balance_transaction:n.balance_transaction, payment_intent:n.payment_intent,application_fee:n.application_fee })),null,2))
       const balance_transactions = charges.filter(n=>!!n?.balance_transaction && n.balance_transaction?.currency==='usd').map(n=>n.balance_transaction)
 
      // const amount = charges.reduce((a, b) => a + b.amount, 0)
