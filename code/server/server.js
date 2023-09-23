@@ -16,7 +16,7 @@ require('dotenv').config({ path: './.env' })
 
 const express = require('express')
 const app = express()
-const { join } = require('path')
+const { join,resolve } = require('path')
 
 
 // Replace if using a different env file or config
@@ -173,10 +173,14 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
         })
         console.log('[webhook][customers][updated]')
         // ATTENTION we make sure payment metadata is set!!
-        const pmUpdated = await stripe.paymentMethods.update(pm.id, {
-          metadata:cus.metadata
-        })
-        console.log('[webhook][payment_method.attached][metadata][updated]',pmUpdated.metadata)
+
+        if(!pm?.metadata?.timestamp){
+          const pmUpdated = await stripe.paymentMethods.update(pm.id, {
+            metadata:cus.metadata
+          })
+          console.log('[webhook][payment_method.attached][metadata][updated]',pmUpdated.metadata)
+        }
+     
       }
 
       // add metadata to payment method
@@ -249,12 +253,59 @@ app.use('/api', apiRouter(stripe))
 // })
 
 //Serving React
-app.get('*', (req, res) => {
-  res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
-  res.header('Expires', '-1')
-  res.header('Pragma', 'no-cache')
-  res.sendFile(join(__dirname, process.env.STATIC_DIR, clientDir, 'index.html'))
-})
+// app.get('*', (req, res) => {
+//   res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
+//   res.header('Expires', '-1')
+//   res.header('Pragma', 'no-cache')
+//   res.sendFile(join(__dirname, process.env.STATIC_DIR, clientDir, 'index.html'))
+// })
+
+// Routes
+app.get('/', (req, res) => {
+  try {
+    const path = resolve(`${process.env.STATIC_DIR}/index.html`);
+    if (!fs.existsSync(path)) throw Error();
+    res.sendFile(path);
+  } catch (error) {
+    const path = resolve('./public/static-file-error.html');
+    res.sendFile(path);
+  }
+});
+
+
+
+//-------------------------
+// --- servers existing routes
+// Milestone 1: Signing up
+// Shows the lesson sign up page.
+app.get('/lessons', (req, res) => {
+  try {
+    const path = resolve(`${process.env.STATIC_DIR}/lessons.html`);
+    if (!fs.existsSync(path)) throw Error();
+    res.sendFile(path);
+  } catch (error) {
+    const path = resolve('./public/static-file-error.html');
+    res.sendFile(path);
+  }
+});
+
+// Milestone 3: Managing account info
+// Displays the account update page for a given customer
+app.get("/account-update/:customer_id", async (req, res) => {
+  try {
+    const path = resolve(`${process.env.STATIC_DIR}/account-update.html`);
+    if (!fs.existsSync(path)) throw Error();
+    res.sendFile(path);
+  } catch (error) {
+    const path = resolve('./public/static-file-error.html');
+    res.sendFile(path);
+  }
+});
+//-------------------------
+//------------------------- 
+// --- servers existing routes end
+
+
 
 function errorHandler(err, req, res, next) {
   res.status(500).send({ error: { message: err.message } })
