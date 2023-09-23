@@ -32,6 +32,7 @@ exports.cancelPaymentIntent = async (stripe, piList, cusMeta) => {
       //   continue
       // }
       await stripe.paymentIntents.cancel(pi.id, { cancellation_reason: 'duplicate' })
+      console.log('scheduleLesson/cancelPaymentIntent/duplicate', 'Canceled payment_intent_id:', pi.id, 'with customer_id:', pi.customer)
       canceled = true
     }
   } catch (err) {
