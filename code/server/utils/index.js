@@ -5,7 +5,7 @@
 /** @typedef {import('../types').Customer.LessonSession} LessonSession */
 /** @typedef {import('../types').SchedulePlanner.specificTimeSlots} SpecificTimeSlots */
 /** @typedef {import('../types').SchedulePlanner.timeSlots} TimeSlots */
-
+/** @typedef {import('stripe').Stripe.PaymentIntent.LastPaymentError} LastPaymentError */
 
 const moment = require('moment')
 
@@ -37,6 +37,11 @@ exports.delay = (time = 0) => {
  * @returns
  */
 exports.cusFailedPaymentDto = (pi, error) => {
+  /**
+   * @type {LastPaymentError}
+   */
+  const lastPaymentError = pi?.last_payment_error
+  
   try {
     return {
       customer: {
@@ -45,16 +50,15 @@ exports.cusFailedPaymentDto = (pi, error) => {
         name: pi.customer.name,
       },
       payment_intent: {
-        id: pi.id,
         created: pi.created,
         description: pi.description,
         status: pi.status,
         error: error,
       },
+      // get the details from {last_payment_error}
       payment_method: {
-        id: pi.payment_method?.id,
-        last4: pi.payment_method?.card?.last4,
-        brand: pi.payment_method?.card?.brand,
+        last4: lastPaymentError?.payment_method?.card?.last4,
+        brand:lastPaymentError?.payment_method?.card?.brand,
       },
     }
   } catch (err) {
