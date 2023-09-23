@@ -248,7 +248,7 @@ exports.findCustomersWithFailedPayments =
       }
       const lessonType = 'lessons-payment'
 
-      const charges = (await stripe.charges.list({ ...until,  expand:['data.balance_transaction','data.payment_intent']})).data.filter(n=>n.metadata?.type === lessonType)
+      const charges = (await stripe.charges.list({  expand:['data.balance_transaction','data.payment_intent']})).data.filter(n=>n.metadata?.type === lessonType)
 
       console.log('[findCustomersWithFailedPayments][charges]', JSON.stringify(charges, null, 2))
 
