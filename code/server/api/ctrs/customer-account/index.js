@@ -258,7 +258,7 @@ exports.findCustomersWithFailedPayments =
       ).data.filter((n) => listLessonTypes.includes(n.metadata?.type))
 
  
-      console.log('match/paymentIntents',JSON.stringify(paymentIntents, null, 2))
+      console.log('match/paymentIntents',JSON.stringify(paymentIntents.filter(n=>!!n.last_payment_error), null, 2))
 
       /**
        * @type {Array<PaymentIntent>}
@@ -267,9 +267,10 @@ exports.findCustomersWithFailedPayments =
 
       // catch all payments intents with errors
       for (const pi of paymentIntents) {
-        if (pi.last_payment_error) {
-          results.push(pi)
-        }
+        // if (pi.last_payment_error) {
+         
+        // }
+        results.push(pi)
       }
 
       // now check customer payment method associated with failed payment intent for last 36 hours
@@ -280,17 +281,19 @@ exports.findCustomersWithFailedPayments =
 
           /** @type {StripeCustomer} */
           const customer = r.customer
+          if(customer?.deleted) continue
 
           /**
            * @type {PaymentMethod}
            */
           const paymentMethod = r.payment_method
+          
 
           try {
             // matching payment methods against paymentIntent
-            const list = (
+            const list = !!paymentMethod?.id ?(
               await stripe.paymentMethods.list({ customer: customer.id, type: 'card' })
-            ).data.filter((n) => n.id === paymentMethod.id && n.metadata?.type === lessonType)
+            ).data.filter((n) => n.id === paymentMethod?.id && n.metadata?.type === lessonType) :[]
 
             // don't include customers who previously failed but have now updated their payment method.
             // the previous failed payment intent was not associated with the latest payment method
@@ -306,8 +309,11 @@ exports.findCustomersWithFailedPayments =
         }
       }
 
+      console.log('match/paymentIntents/results/1',JSON.stringify(results, null, 2))
+
       // restructure
       const r = results.map((n) => cusFailedPaymentDto(n, 'issuer_declined'))
+      console.log('match/paymentIntents/results/2',JSON.stringify(r, null, 2))
 
       // finally remove ids from results
       r.forEach((n) => {
@@ -315,6 +321,7 @@ exports.findCustomersWithFailedPayments =
         delete n.payment_intent.id
         delete n.customer.id
       })
+      console.log('match/paymentIntents/results/3',JSON.stringify(r, null, 2))
 
       return res.status(200).send(r)
     } catch (err) {
