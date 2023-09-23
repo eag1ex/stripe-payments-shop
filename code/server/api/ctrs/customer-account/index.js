@@ -248,25 +248,32 @@ exports.findCustomersWithFailedPayments =
       }
       const lessonType = 'lessons-payment'
 
-      const charges = (await stripe.charges.list({  expand:['data.balance_transaction','data.payment_intent']})).data.filter(n=>n.metadata?.type === lessonType)
+      // const charges = (await stripe.charges.list({  expand:['data.balance_transaction','data.payment_intent']})).data.filter(n=>n.metadata?.type === lessonType)
 
-      console.log('[findCustomersWithFailedPayments][charges]', JSON.stringify(charges, null, 2))
+     
 
-      const reportRuns = await stripe.reporting.reportRuns.list({
-        limit: 100,
-        ...until
-      });
+      // const reportRuns = await stripe.reporting.reportRuns.list({
+      //   limit: 100,
+      //   ...until
+      // });
 
-      console.log('[findCustomersWithFailedPayments][reportRuns]', JSON.stringify(reportRuns, null, 2))
+      // console.log('[findCustomersWithFailedPayments][reportRuns]', JSON.stringify(reportRuns, null, 2))
 
+      // payment intent include transaction errors and payment method
+      
+      
 
       // Only check the last 36 hours of payments
-      const paymentIntents = (
+      let paymentIntents = (
         await stripe.paymentIntents.list({
           //...until,
           expand: ['data.payment_method', 'data.customer'],
         })
-      ).data.filter((n) => n.metadata?.type === lessonType)
+      ).data
+
+      console.log('[findCustomersWithFailedPayments][charges]', JSON.stringify(paymentIntents, null, 2))
+
+      paymentIntents = paymentIntents.filter((n) => n.metadata?.type === lessonType)
 
       // const l = paymentIntents.filter((n) => !!n.last_payment_error)
 
