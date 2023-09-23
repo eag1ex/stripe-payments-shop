@@ -252,6 +252,14 @@ exports.findCustomersWithFailedPayments =
 
       console.log('[findCustomersWithFailedPayments][charges]', JSON.stringify(charges, null, 2))
 
+      const reportRuns = await stripe.reporting.reportRuns.list({
+        limit: 100,
+        ...until
+      });
+
+      console.log('[findCustomersWithFailedPayments][reportRuns]', JSON.stringify(reportRuns, null, 2))
+
+
       // Only check the last 36 hours of payments
       const paymentIntents = (
         await stripe.paymentIntents.list({
