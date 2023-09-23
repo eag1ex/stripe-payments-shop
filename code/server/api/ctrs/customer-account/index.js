@@ -227,6 +227,7 @@ exports.accountUpdate =
     }
   }
 
+
 /**
  * @GET
  * @api /find-customers-with-failed-payments
@@ -250,57 +251,40 @@ exports.findCustomersWithFailedPayments =
       const listLessonTypes = ['first_lesson','second_lesson','third_lesson','fourth_lesson','fifth_lesson','sixth_lesson','seventh_lesson','eighth_lesson','ninth_lesson','tenth_lesson',lessonType]
 
       // Only check the last 36 hours of payments
-      let paymentIntents = (
+      let paymentIntentsWithErrors = (
         await stripe.paymentIntents.list({
           ...until,
           expand: ['data.payment_method', 'data.customer'],
         })
-      ).data.filter((n) => listLessonTypes.includes(n.metadata?.type))
+      ).data.filter((n) => listLessonTypes.includes(n.metadata?.type) && !!n.last_payment_error)
 
  
-      console.log('match/paymentIntents',JSON.stringify(paymentIntents.filter(n=>!!n.last_payment_error), null, 2))
+      console.log('match/paymentIntents',JSON.stringify(paymentIntentsWithErrors, null, 2))
 
-      /**
-       * @type {Array<PaymentIntent>}
-       */
-      let results = []
-
-      // catch all payments intents with errors
-      for (const pi of paymentIntents) {
-        if (pi.last_payment_error) {
-          results.push(pi)
-        }
-      }
 
       // now check customer payment method associated with failed payment intent for last 36 hours
-      if (results.length) {
+      if (paymentIntentsWithErrors.length) {
         // for loop
-        for (let inx = 0; inx < results.length; inx++) {
-          const r = results[inx]
+        for (let inx = 0; inx < paymentIntentsWithErrors.length; inx++) {
+          const r = paymentIntentsWithErrors[inx]
 
           /** @type {StripeCustomer} */
           const customer = r.customer
           if(customer?.deleted) continue
 
-          /**
-           * @type {PaymentMethod}
-           */
-          const paymentMethod = r.payment_method
+          const last_payment_error = r.last_payment_error
           
           try {
             // matching payment methods against paymentIntent
-            const list = !!paymentMethod?.id ?(
+            const list = (
               await stripe.paymentMethods.list({ customer: customer.id, type: 'card' })
-            ).data.filter((n) => n.id === paymentMethod?.id) :[]
-
+            ).data.filter((n) => n.id === last_payment_error?.payment_method?.id)
             // don't include customers who previously failed but have now updated their payment method.
             // the previous failed payment intent was not associated with the latest payment method
-            if (!list.length) {
-              results.splice(inx, 1)
-            }
+            if (!list.length) paymentIntentsWithErrors.splice(inx, 1)
           } catch (err) {
             console.error(
-              '[findCustomersWithFailedPayments][paymentMethods][forloop][error]',
+              '[findCustomersWithFailedPayments][paymentMethods][error]',
               err.message,
             )
           }
@@ -310,16 +294,8 @@ exports.findCustomersWithFailedPayments =
       console.log('match/paymentIntents/results/1',JSON.stringify(results, null, 2))
 
       // restructure
-      const r = results.map((n) => cusFailedPaymentDto(n, 'issuer_declined'))
+      const r = paymentIntentsWithErrors.map((n) => cusFailedPaymentDto(n, 'issuer_declined'))
       console.log('match/paymentIntents/results/2',JSON.stringify(r, null, 2))
-
-      // finally remove ids from results
-      r.forEach((n) => {
-        delete n.payment_method.id
-        delete n.payment_intent.id
-        delete n.customer.id
-      })
-      console.log('match/paymentIntents/results/3',JSON.stringify(r, null, 2))
 
       return res.status(200).send(r)
     } catch (err) {
