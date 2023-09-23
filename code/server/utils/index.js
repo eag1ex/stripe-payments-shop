@@ -34,6 +34,7 @@ exports.delay = (time = 0) => {
 /**
  * @DTO for /find-customers-with-failed-payments
  * @param {PaymentIntent} pi
+ * @param {'issuer_declined'} error
  * @returns
  */
 exports.cusFailedPaymentDto = (pi, error) => {
@@ -52,7 +53,7 @@ exports.cusFailedPaymentDto = (pi, error) => {
       payment_intent: {
         created: pi.created,
         description: pi.description,
-        status: pi.status,
+        status: error==='issuer_declined' ?'failed': pi.status,
         error: error,
       },
       // get the details from {last_payment_error}
