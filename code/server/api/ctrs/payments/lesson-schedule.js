@@ -65,18 +65,20 @@ exports.scheduleLesson =
       )
 
  
-      /**
-       * Confirm payment
-       * @param {PaymentIntent} pi
-       * @returns
-       */
-      const confirmPayment = async (pi) => {
-        return await stripe.paymentIntents.confirm(pi?.id, {
-          payment_method: 'pm_card_visa',
-          capture_method: 'manual',
-          setup_future_usage: 'off_session',
-        })
-      }
+      // /**
+      //  * Confirm payment
+      //  * @param {PaymentIntent} pi
+      //  * @returns
+      //  */
+      // const confirmPayment = async (pi) => {
+      //   return await stripe.paymentIntents.confirm(pi?.id, {
+          
+      //     payment_method: 'pm_card_visa',
+      //     capture_method: 'manual',
+      //     setup_future_usage: 'off_session',
+      //     error_on_requires_action:true,
+      //   })
+      // }
 
       isDay = schedulePlanner(customer.metadata.timestamp, customer.metadata)
 
@@ -94,7 +96,11 @@ exports.scheduleLesson =
       piId = pi?.id
 
       pi = await stripe.paymentIntents.create({
+        
         capture_method: 'manual',
+        confirmation_method:'manual',
+        error_on_requires_action:true,
+        confirm: true,
         currency: baseCurrency,
         payment_method_types: ['card'],
         setup_future_usage: 'off_session',
@@ -114,7 +120,8 @@ exports.scheduleLesson =
         // },
       })
 
-      pi = await confirmPayment(pi)
+    //  console.log('pi/id',pi.id)
+    //   pi = await confirmPayment(pi)
 
 
       return res.status(200).send({

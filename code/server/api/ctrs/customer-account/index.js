@@ -248,20 +248,16 @@ exports.findCustomersWithFailedPayments =
       }
       const lessonType = 'lessons-payment'
 
-      // const charges = (await stripe.charges.list({  expand:['data.balance_transaction','data.payment_intent']})).data.filter(n=>n.metadata?.type === lessonType)
 
-     
+      // const listLessonTypes = ['first_lesson','second_lesson','third_lesson','fourth_lesson','fifth_lesson','sixth_lesson','seventh_lesson','eighth_lesson','ninth_lesson','tenth_lesson']
 
-      // const reportRuns = await stripe.reporting.reportRuns.list({
-      //   limit: 100,
-      //   ...until
-      // });
+      // // list setup intents to get all customer payment methods as it is not possible to list payment methods directly
+      // const failedSetupIntents = (await stripe.setupIntents.list({  expand: ['data.customer'] })).data.filter(n=> !!n.last_setup_error && !n.customer?.deleted)
 
-      // console.log('[findCustomersWithFailedPayments][reportRuns]', JSON.stringify(reportRuns, null, 2))
-
-      // payment intent include transaction errors and payment method
       
-      
+      // payment intent  check for last_payment_error 
+
+      //console.log('match/failedSetupIntents',JSON.stringify(failedSetupIntents, null, 2))
 
       // Only check the last 36 hours of payments
       let paymentIntents = (
@@ -271,7 +267,18 @@ exports.findCustomersWithFailedPayments =
         })
       ).data
 
-      console.log('[findCustomersWithFailedPayments][charges]', JSON.stringify(paymentIntents, null, 2))
+      //   // match payment intents with setup intents by payment_method id
+      //   const listMatch = []
+      //   for (const si of failedSetupIntents) {
+      //     const list = paymentIntents.filter((n) => /*n.payment_method?.id === si.payment_method*/ n.customer?.id === si.customer?.id)
+      //     listMatch.push(...list)
+      //     // if (list.length) {
+      //     //   paymentIntents = paymentIntents.filter((n) => n.payment_method === si.payment_method)
+      //     // }
+      //   }
+
+      console.log('match/paymentIntents',JSON.stringify(paymentIntents, null, 2))
+      // console.log('[findCustomersWithFailedPayments][charges]', JSON.stringify(paymentIntents, null, 2))
 
       paymentIntents = paymentIntents.filter((n) => n.metadata?.type === lessonType)
 
